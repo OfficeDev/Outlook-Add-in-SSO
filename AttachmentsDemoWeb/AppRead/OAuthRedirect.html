@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <title>AttachmentsDemo OAuth Redirect Page</title>
+
+    <script src="../Scripts/jquery-1.9.1.js" type="text/javascript"></script>
+
+    <link href="App.css" rel="stylesheet" type="text/css" />
+    <script src="App.js" type="text/javascript"></script>
+</head>
+<body>
+    <script type="text/javascript">
+        app.initialize();
+        // Get the code and state parameters from the request URL
+        var oauthToken = {
+            Code: getUrlParameter('code'),
+            State: getUrlParameter('state')
+        };
+
+        // Call the CompleteOAuthFlow WebAPI method
+        $.ajax({
+            url: '../../api/OAuth/CompleteOAuthFlow',
+            type: 'POST',
+            data: JSON.stringify(oauthToken),
+            contentType: 'application/json;charset=utf-8'
+        }).done(function (data) {
+            app.showNotification(JSON.stringify(data));
+            self.close();
+        }).fail(function (status) {
+            app.showNotification('Error', JSON.stringify(status));
+        });
+
+        function getUrlParameter(parameterName) {
+            var pattern = "[\\?&]" + parameterName + "=([^&#]*)",
+                regularExpression = new RegExp(pattern),
+                results = regularExpression.exec(window.location.href);
+
+            return results ? results[1] : null;
+        }
+    </script>
+</body>
+</html>
