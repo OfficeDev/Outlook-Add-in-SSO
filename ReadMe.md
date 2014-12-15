@@ -26,3 +26,7 @@ Before you run the sample, you'll need to do a few things to make it work proper
 ## Running the Sample ##
 
 You can run the sample right from Visual Studio. You should be prompted for a user account and password. Be sure to use a user in your Office 365 tenant. The mail app will be installed for that user, and Outlook Web Access will open. Select any message with file attachments, and you should see an **AttachmentsDemo** button in the reading pane.
+
+## Copyright ##
+
+Copyright (c) Microsoft. All rights reserved.
