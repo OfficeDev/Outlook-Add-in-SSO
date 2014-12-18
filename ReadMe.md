@@ -22,6 +22,7 @@ Before you run the sample, you'll need to do a few things to make it work proper
 	- Permissions to other Applications: Office 365 SharePoint Online, set Delegated Permissions to enable "Edit or delete users' files".
 
 3. Get the client ID from the app's registration in the Azure Management Portal, and generate a key for the app. This is done on the "Configure" tab of the app in the portal. Copy the client ID into the **ClientId** variable, and copy the key into the **ClientSecret** variable. These are both found in OAuthController.cs.
+4. Update the reference to the EWS Managed API (Microsoft.Exchange.WebServices.Data). Download details can be found on [GitHub](https://github.com/OfficeDev/ews-managed-api/blob/master/README.md).
 
 ## Running the Sample ##
 
