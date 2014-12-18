@@ -31,12 +31,10 @@
         $('#checking_auth').hide();
       
         if (isAuthorized == true) {
-            //$('#saveAttachment').show();
             $('#auth_needed').hide();
             $('#providePermission').hide();
         }
         else {
-            //$('#saveAttachment').hide();
             $('#auth_needed').show();
             $('#providePermission').show();
         }
@@ -81,12 +79,6 @@
         }).done(function (data) {
             window.open(data);
             
-            //$.oauthpopup({
-            //    path: encodeURIComponent(data),
-            //    callback: function () {
-            //        app.showNotification("Callback happened!");
-            //    }
-            //});
         }).fail(function (status) {
             app.showNotification('Error', JSON.stringify(status));
         }).always(function () {
@@ -132,24 +124,6 @@
             $('.disable-while-sending').prop('disabled', false);
         });
     }
-
-    //$.oauthpopup = function (options) {
-    //    options.windowName = options.windowName || 'ConnectWithOAuth'; // should not include space for IE
-    //    options.windowOptions = options.windowOptions || 'location=0,status=0,width=800,height=400';
-    //    options.callback = options.callback || function () { window.location.reload(); };
-    //    var that = this;
-        
-    //    var targetUrl = '../OAuthStart.html?oauthUrl=' + options.path;
-    //    that._oauthWindow = window.open(targetUrl, options.windowName, options.windowOptions);
-    //    that._oauthWindow.oauthUrl = options.path;
-    //    that._oauthInterval = window.setInterval(function () {
-    //        if (that._oauthWindow.closed) {
-    //            window.clearInterval(that._oauthInterval);
-    //            options.callback();
-    //        }
-    //    }, 1000);
-
-    //};
 })();
 
 // MIT License: 
