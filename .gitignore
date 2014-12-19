@@ -97,7 +97,7 @@ publish/
 
 # NuGet Packages Directory
 ## TODO: If you have NuGet Package Restore enabled, uncomment the next line
-#packages/
+packages/
 
 # Windows Azure Build Output
 csx
@@ -154,3 +154,12 @@ $RECYCLE.BIN/
 
 # Mac desktop service store files
 .DS_Store
+
+# Office Javascript API stuff
+AttachmentsDemoWeb/Scripts/Office/1.1/
+AttachmentsDemoWeb/Scripts/Office/metadata/
+AttachmentsDemoWeb/Content/OfficeThemes.css
+
+# Other Visual Studio stuff
+*.userosscache
+MyClientId.txt
