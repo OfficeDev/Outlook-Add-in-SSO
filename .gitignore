@@ -162,4 +162,5 @@ AttachmentsDemoWeb/Content/OfficeThemes.css
 
 # Other Visual Studio stuff
 *.userosscache
+.vs/
 MyClientId.txt
