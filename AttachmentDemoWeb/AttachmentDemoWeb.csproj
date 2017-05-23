@@ -1,6 +1,6 @@
 ﻿<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.3\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.3\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
-  <Import Project="..\packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" />
+  <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.4\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.4\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
+  <Import Project="..\packages\Microsoft.Net.Compilers.2.1.0\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.2.1.0\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -44,8 +44,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=1.0.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.3\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+    <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=1.0.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.4\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Web.DynamicData" />
@@ -66,7 +66,8 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="packages.config" />
+    <Content Include="Scripts\jquery-3.1.1.slim.min.map" />
+    <Content Include="Scripts\jquery-3.1.1.min.map" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
@@ -83,6 +84,19 @@
     <Content Include="Content\fabric.min.css" />
     <Content Include="Content\fabric.rtl.css" />
     <Content Include="Content\fabric.rtl.min.css" />
+    <Content Include="Content\OfficeThemes.css" />
+    <Content Include="Functions\FunctionFile.html" />
+    <Content Include="Functions\FunctionFile.js" />
+    <Content Include="Images\Close.png" />
+    <Content Include="Images\Icon16.png" />
+    <Content Include="Images\Icon32.png" />
+    <Content Include="Images\Icon64.png" />
+    <Content Include="Images\Icon80.png" />
+    <Content Include="MessageRead.css" />
+    <Content Include="MessageRead.html" />
+    <Content Include="MessageRead.js" />
+    <Content Include="Scripts\FabricUI\MessageBanner.js" />
+    <Content Include="packages.config" />
     <Content Include="Content\sass\_Office.Color.Variables.scss" />
     <Content Include="Content\sass\_Fabric.ZIndex.Variables.scss" />
     <Content Include="Content\sass\_Fabric.Utilities.scss" />
@@ -93,6 +107,7 @@
     <Content Include="Content\sass\_Fabric.Responsive.Variables.scss" />
     <Content Include="Content\sass\_Fabric.Responsive.Utilities.Variables.scss" />
     <Content Include="Content\sass\_Fabric.Mixins.scss" />
+    <Content Include="Content\sass\_Fabric.Mixins.RTL.scss" />
     <Content Include="Content\sass\_Fabric.Icons.scss" />
     <Content Include="Content\sass\_Fabric.Grid.scss" />
     <Content Include="Content\sass\_Fabric.Common.scss" />
@@ -115,24 +130,13 @@
     <Content Include="Content\sass\Fabric.Color.Mixins.Output.scss" />
     <Content Include="Content\sass\Fabric.Animations.RTL.Output.scss" />
     <Content Include="Content\sass\Fabric.Animations.Output.scss" />
-    <None Include="Scripts\jquery-1.9.1.intellisense.js" />
-    <Content Include="Functions\FunctionFile.html" />
-    <Content Include="Functions\FunctionFile.js" />
-    <Content Include="Images\Close.png" />
-    <Content Include="Images\Icon16.png" />
-    <Content Include="Images\Icon32.png" />
-    <Content Include="Images\Icon64.png" />
-    <Content Include="Images\Icon80.png" />
-    <Content Include="MessageRead.css" />
-    <Content Include="MessageRead.html" />
-    <Content Include="MessageRead.js" />
-    <Content Include="Scripts\FabricUI\MessageBanner.js" />
-    <Content Include="Scripts\jquery-1.9.1.js" />
-    <Content Include="Scripts\jquery-1.9.1.min.js" />
-    <Content Include="Scripts\jquery-1.9.1.min.map" />
+    <None Include="Scripts\jquery-3.1.1.intellisense.js" />
+    <Content Include="Scripts\jquery-3.1.1.js" />
+    <Content Include="Scripts\jquery-3.1.1.min.js" />
+    <Content Include="Scripts\jquery-3.1.1.slim.js" />
+    <Content Include="Scripts\jquery-3.1.1.slim.min.js" />
     <None Include="Scripts\Office\1\outlook-win32.debug-vsdoc.js" />
     <None Include="Scripts\Office\1\office-vsdoc.js" />
-    <Content Include="Content\OfficeThemes.css" />
     <Content Include="Scripts\jquery.fabric.js" />
     <Content Include="Scripts\jquery.fabric.min.js" />
     <Content Include="Scripts\Office\1\access-web-16.00.debug.js" />
@@ -141,6 +145,7 @@
     <Content Include="Scripts\Office\1\ar-sa\office_strings.js" />
     <Content Include="Scripts\Office\1\ar-sa\outlook_strings.debug.js" />
     <Content Include="Scripts\Office\1\ar-sa\outlook_strings.js" />
+    <Content Include="Scripts\Office\1\ariatelemetry\aria-web-telemetry-2.8.0.min.js" />
     <Content Include="Scripts\Office\1\bg-bg\office_strings.debug.js" />
     <Content Include="Scripts\Office\1\bg-bg\office_strings.js" />
     <Content Include="Scripts\Office\1\bg-bg\outlook_strings.debug.js" />
@@ -285,6 +290,8 @@
     <Content Include="Scripts\Office\1\outlook-15.js" />
     <Content Include="Scripts\Office\1\outlook-ios-16.00.debug.js" />
     <Content Include="Scripts\Office\1\outlook-ios-16.00.js" />
+    <Content Include="Scripts\Office\1\outlook-mac-16.00.debug.js" />
+    <Content Include="Scripts\Office\1\outlook-mac-16.00.js" />
     <Content Include="Scripts\Office\1\outlook-web-16.00.debug.js" />
     <Content Include="Scripts\Office\1\outlook-web-16.00.js" />
     <Content Include="Scripts\Office\1\outlook-web-16.01.debug.js" />
@@ -440,8 +447,8 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Net.Compilers.1.3.2\build\Microsoft.Net.Compilers.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.3\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.3\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Net.Compilers.2.1.0\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Net.Compilers.2.1.0\build\Microsoft.Net.Compilers.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.4\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.4\build\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

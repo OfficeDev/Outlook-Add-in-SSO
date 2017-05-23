@@ -1,5 +1,5 @@
 /* Office JavaScript API library */
-/* Version: 16.0.7524.3000 */
+/* Version: 16.0.7819.1000 */
 /*
 	Copyright (c) Microsoft Corporation.  All rights reserved.
 */
@@ -457,7 +457,7 @@ var ScriptLoading;
     ScriptLoading.LoadScriptHelper = LoadScriptHelper;
 })(ScriptLoading || (ScriptLoading = {}));
 OSF.ConstantNames = {
-    FileVersion: "16.0.7524.3000",
+    FileVersion: "16.0.7819.1000",
     OfficeJS: "office.js",
     OfficeDebugJS: "office.debug.js",
     DefaultLocale: "en-us",
@@ -532,6 +532,25 @@ OSF._OfficeAppFactory = (function OSF__OfficeAppFactory() {
         }
         return hostInfoValue;
     };
+    var compareVersions = function _compareVersions(version1, version2) {
+        var splitVersion1 = version1.split(".");
+        var splitVersion2 = version2.split(".");
+        var iter;
+        for (iter in splitVersion1) {
+            if (parseInt(splitVersion1[iter]) < parseInt(splitVersion2[iter])) {
+                return false;
+            }
+            else if (parseInt(splitVersion1[iter]) > parseInt(splitVersion2[iter])) {
+                return true;
+            }
+        }
+        return false;
+    };
+    var shouldLoadOldMacJs = function _shouldLoadOldMacJs() {
+        var versionToUseNewJS = "15.30.1128.0";
+        var currentHostVersion = window.external.GetContext().GetHostFullVersion();
+        return !!compareVersions(versionToUseNewJS, currentHostVersion);
+    };
     var _retrieveHostInfo = function OSF__OfficeAppFactory$_retrieveHostInfo() {
         var hostInfoParaName = "_host_Info";
         var hostInfoValue = getQueryStringValue(hostInfoParaName);
@@ -550,7 +569,7 @@ OSF._OfficeAppFactory = (function OSF__OfficeAppFactory() {
                     _hostInfo.isO15 = true;
                     _hostInfo.isDialog = true;
                 }
-                else if (fallbackHostInfo.toLowerCase().indexOf("mac") !== -1 && fallbackHostInfo.toLowerCase().indexOf("outlook") !== -1) {
+                else if (fallbackHostInfo.toLowerCase().indexOf("mac") !== -1 && fallbackHostInfo.toLowerCase().indexOf("outlook") !== -1 && shouldLoadOldMacJs()) {
                     _hostInfo.isO15 = true;
                 }
                 else {

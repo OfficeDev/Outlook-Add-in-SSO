@@ -21,8 +21,16 @@ var fabric = fabric || {};
  * in the DOM.
  */
 fabric.Breadcrumb = function(container) {
-  this.container = container;
+  this.breadcrumb = container;
+  this.breadcrumbList = container.querySelector('.ms-Breadcrumb-list');
+  this.listItems = container.querySelectorAll('.ms-Breadcrumb-listItem');
+  this.contextMenu = container.querySelector('.ms-ContextualMenu');
+  this.overflowButton = container.querySelector('.ms-Breadcrumb-overflowButton');
+  this.overflowMenu = container.querySelector('.ms-Breadcrumb-overflowMenu');
+  this.itemCollection = [];
+  this.currentMaxItems = 0;
   this.init();
+
 };
 
 fabric.Breadcrumb.prototype = (function() {
@@ -30,34 +38,69 @@ fabric.Breadcrumb.prototype = (function() {
   //medium breakpoint
   var MEDIUM = 639;
 
-  //cached DOM elements
-  var _breadcrumb;
-  var _listItems;
-  var _contextMenu;
-  var _overflowButton;
-  var _overflowMenu;
-  var _breadcrumbList;
+  /**
+   * initializes component
+   */
+  var init = function() {
+    _setListeners.call(this);
+    _createItemCollection.call(this);
+    _onResize.call(this, null);
+  };
 
-  var _currentMaxItems = 0;
-  var _itemCollection = [];
+  /**
+   * Adds a breadcrumb item to a breadcrumb
+   * @param itemLabel {String} the item's text label
+   * @param itemLink {String} the item's href link
+   * @param tabIndex {number} the item's tabIndex
+   */
+  var addItem = function(itemLabel, itemLink, tabIndex) {
+    this.itemCollection.push({text: itemLabel, link: itemLink, tabIndex: tabIndex});
+    _updateBreadcrumbs.call(this);
+  };
+
+  /**
+   * Removes a breadcrumb item by item label in the breadcrumbs list
+   * @param itemLabel {String} the item's text label
+   */
+  var removeItemByLabel = function(itemLabel) {
+    var i = this.itemCollection.length;
+    while (i--) {
+      if (this.itemCollection[i].text === itemLabel) {
+        this.itemCollection.splice(i, 1);
+      }
+    }
+    _updateBreadcrumbs.call(this);
+  };
+
+  /**
+   * removes a breadcrumb item by position in the breadcrumbs list
+   * index starts at 0
+   * @param itemLabel {String} the item's text label
+   * @param itemLink {String} the item's href link
+   * @param tabIndex {number} the item's tabIndex
+   */
+  var removeItemByPosition = function(value) {
+    this.itemCollection.splice(value, 1);
+    _updateBreadcrumbs.call(this);
+  };
 
   /**
    * create internal model of list items from DOM
    */
   var _createItemCollection = function() {
-    var length = _listItems.length;
+    var length = this.listItems.length;
     var i = 0;
     var item;
     var text;
-    var link; 
+    var link;
     var tabIndex;
 
-    for(i; i < length; i++) {
-      item = _listItems[i].querySelector('.ms-Breadcrumb-itemLink');
+    for (i; i < length; i++) {
+      item = this.listItems[i].querySelector('.ms-Breadcrumb-itemLink');
       text = item.textContent;
       link = item.getAttribute('href');
       tabIndex = parseInt(item.getAttribute('tabindex'), 10);
-      _itemCollection.push({text: text, link: link, tabIndex: tabIndex});
+      this.itemCollection.push({text: text, link: link, tabIndex: tabIndex});
     }
   };
 
@@ -66,37 +109,30 @@ fabric.Breadcrumb.prototype = (function() {
    *
    */
   var _onResize = function() {
-    _closeOverflow(null);
-    _renderList();
-  }; 
+    _closeOverflow.call(this, null);
+    _renderListOnResize.call(this);
+  };
 
   /**
-   * render breadcrumbs and overflow menus
+   * render breadcrumbs and overflow menus on resize
    */
-  var _renderList = function() {
+  var _renderListOnResize = function() {
     var maxItems = window.innerWidth > MEDIUM ? 4 : 2;
-
-    if(maxItems !== _currentMaxItems) {
-      if(_itemCollection.length > maxItems) {
-        _breadcrumb.className += ' is-overflow';
-      } else {
-        _removeClass(_breadcrumb, ' is-overflow');
-      }
-      _addBreadcrumbItems(maxItems);
-      _addItemsToOverflow(maxItems);
+    if (maxItems !== this.currentMaxItems) {
+      _updateBreadcrumbs.call(this);
     }
 
-    _currentMaxItems = maxItems;
+    this.currentMaxItems = maxItems;
   };
 
   /**
    * creates the overflow menu
    */
   var _addItemsToOverflow = function(maxItems) {
-    _resetList(_contextMenu);
-    var end = _itemCollection.length - maxItems;
-    var overflowItems = _itemCollection.slice(0, end);
-
+    _resetList.call(this, this.contextMenu);
+    var end = this.itemCollection.length - maxItems;
+    var overflowItems = this.itemCollection.slice(0, end);
+    var contextMenu = this.contextMenu;
     overflowItems.forEach(function(item) {
       var li = document.createElement('li');
       li.className = 'ms-ContextualMenu-item';
@@ -105,10 +141,12 @@ fabric.Breadcrumb.prototype = (function() {
       }
       var a = document.createElement('a');
       a.className = 'ms-ContextualMenu-link';
-      a.setAttribute('href', item.link);
+      if (item.link !== null) {
+        a.setAttribute('href', item.link);
+      }
       a.textContent = item.text;
       li.appendChild(a);
-      _contextMenu.appendChild(li);
+      contextMenu.appendChild(li);
     });
   };
 
@@ -116,26 +154,28 @@ fabric.Breadcrumb.prototype = (function() {
    * creates the breadcrumbs
    */
   var _addBreadcrumbItems = function(maxItems) {
-    _resetList(_breadcrumbList);
-    var i = _itemCollection.length - maxItems;
-
-    if(i >= 0) {
-      for(i; i < _itemCollection.length; i++) {
+    _resetList.call(this, this.breadcrumbList);
+    var i = this.itemCollection.length - maxItems;
+    i = i < 0 ? 0 : i;
+    if (i >= 0) {
+      for (i; i < this.itemCollection.length; i++) {
         var listItem = document.createElement('li');
-        var item = _itemCollection[i];
+        var item = this.itemCollection[i];
         var a = document.createElement('a');
         var chevron = document.createElement('i');
         listItem.className = 'ms-Breadcrumb-listItem';
         a.className = 'ms-Breadcrumb-itemLink';
-        a.setAttribute('href', item.link);
-        if(!isNaN(item.tabIndex)) {
+        if (item.link !== null) {
+          a.setAttribute('href', item.link);
+        }
+        if (!isNaN(item.tabIndex)) {
           a.setAttribute('tabindex', item.tabIndex);
         }
         a.textContent = item.text;
         chevron.className = 'ms-Breadcrumb-chevron ms-Icon ms-Icon--chevronRight';
         listItem.appendChild(a);
         listItem.appendChild(chevron);
-        _breadcrumbList.appendChild(listItem);
+        this.breadcrumbList.appendChild(listItem);
       }
     }
   };
@@ -153,17 +193,17 @@ fabric.Breadcrumb.prototype = (function() {
    * opens the overflow menu
    */
   var _openOverflow = function(event) {
-    if(_overflowMenu.className.indexOf(' is-open') === -1) {
-      _overflowMenu.className += ' is-open';
-      removeOutlinesOnClick(event);
+    if (this.overflowMenu.className.indexOf(' is-open') === -1) {
+      this.overflowMenu.className += ' is-open';
+      removeOutlinesOnClick.call(this, event);
       // force focus rect onto overflow button
-      _overflowButton.focus();
+      this.overflowButton.focus();
     }
   };
 
   var _overflowKeyPress = function(event) {
-    if(event.keyCode === 13) {
-      _openOverflow(event);
+    if (event.keyCode === 13) {
+      _openOverflow.call(this, event);
     }
   };
 
@@ -171,8 +211,8 @@ fabric.Breadcrumb.prototype = (function() {
    * closes the overflow menu
    */
   var _closeOverflow = function(event) {
-    if(!event || event.target !== _overflowButton) {
-      _removeClass(_overflowMenu, ' is-open');
+    if (!event || event.target !== this.overflowButton) {
+      _removeClass.call(this, this.overflowMenu, ' is-open');
     }
   };
 
@@ -181,32 +221,20 @@ fabric.Breadcrumb.prototype = (function() {
    */
   var _removeClass = function (element, value) {
     var index = element.className.indexOf(value);
-    if(index > -1) {
+    if (index > -1) {
       element.className = element.className.substring(0, index);
     }
-  };
-
-  /**
-   * caches elements and values of the component
-   */
-  var _cacheDOM = function(context) {
-    _breadcrumb = context.container;
-    _breadcrumbList = _breadcrumb.querySelector('.ms-Breadcrumb-list');
-    _listItems = _breadcrumb.querySelectorAll('.ms-Breadcrumb-listItem');
-    _contextMenu = _breadcrumb.querySelector('.ms-ContextualMenu');
-    _overflowButton = _breadcrumb.querySelector('.ms-Breadcrumb-overflowButton');
-    _overflowMenu = _breadcrumb.querySelector('.ms-Breadcrumb-overflowMenu');
   };
 
   /**
    * sets handlers for resize and button click events
    */
   var _setListeners = function() {
-    window.addEventListener('resize', _onResize);
-    _overflowButton.addEventListener('click', _openOverflow, false);
-    _overflowButton.addEventListener('keypress', _overflowKeyPress, false);
-    document.addEventListener('click', _closeOverflow, false);
-    _breadcrumbList.addEventListener('click', removeOutlinesOnClick, false);
+    window.addEventListener('resize', _onResize.bind(this), false);
+    document.addEventListener('click', _closeOverflow.bind(this), false);
+    this.overflowButton.addEventListener('click', _openOverflow.bind(this), false);
+    this.overflowButton.addEventListener('keypress', _overflowKeyPress.bind(this), false);
+    this.breadcrumbList.addEventListener('click', removeOutlinesOnClick.bind(this), false);
   };
 
   /**
@@ -217,20 +245,89 @@ fabric.Breadcrumb.prototype = (function() {
   };
 
   /**
-   * initializes component
+   * updates the breadcrumbs and overflow menu
    */
-  var init = function() {
-    _cacheDOM(this);
-    _setListeners();
-    _createItemCollection();
-    _onResize(null);
+  var _updateBreadcrumbs = function() {
+    var maxItems = window.innerWidth > MEDIUM ? 4 : 2;
+    if (this.itemCollection.length > maxItems) {
+      this.breadcrumb.className += ' is-overflow';
+    } else {
+      _removeClass.call(this, this.breadcrumb, ' is-overflow');
+    }
+
+    _addBreadcrumbItems.call(this, maxItems);
+    _addItemsToOverflow.call(this, maxItems);
   };
 
   return {
-    init: init
+    init: init,
+    addItem: addItem,
+    removeItemByLabel: removeItemByLabel,
+    removeItemByPosition: removeItemByPosition
   };
 
 }());
+
+
+// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
+
+/**
+ * Contextual Menu Plugin
+ */
+(function ($) {
+  $.fn.ContextualMenu = function () {
+
+    /** Go through each nav bar we've been given. */
+    return this.each(function () {
+
+      var $contextualMenu = $(this);
+
+
+      // Set selected states.
+      $contextualMenu.on('click', '.ms-ContextualMenu-link:not(.is-disabled)', function(event) {
+        event.preventDefault();
+
+        // Check if multiselect - set selected states
+        if ( $contextualMenu.hasClass('ms-ContextualMenu--multiselect') ) {
+
+          // If already selected, remove selection; if not, add selection
+          if ( $(this).hasClass('is-selected') ) {
+            $(this).removeClass('is-selected');
+          }
+          else {
+            $(this).addClass('is-selected');
+          }
+
+        }
+        // All other contextual menu variants
+        else {
+
+          // Deselect all of the items and close any menus.
+          $('.ms-ContextualMenu-link')
+              .removeClass('is-selected')
+              .siblings('.ms-ContextualMenu')
+              .removeClass('is-open');
+
+          // Select this item.
+          $(this).addClass('is-selected');
+
+          // If this item has a menu, open it.
+          if ($(this).hasClass('ms-ContextualMenu-link--hasMenu')) {
+            $(this).siblings('.ms-ContextualMenu:first').addClass('is-open');
+
+            // Open the menu without bubbling up the click event,
+            // which can cause the menu to close.
+            event.stopPropagation();
+          }
+
+        }
+
+
+      });
+
+    });
+  };
+})(jQuery);
 
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
@@ -395,66 +492,6 @@ fabric.Breadcrumb.prototype = (function() {
     });
   };
 })(jQuery);
-// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
-
-/**
- * Contextual Menu Plugin
- */
-(function ($) {
-  $.fn.ContextualMenu = function () {
-
-    /** Go through each nav bar we've been given. */
-    return this.each(function () {
-
-      var $contextualMenu = $(this);
-
-
-      // Set selected states.
-      $contextualMenu.on('click', '.ms-ContextualMenu-link:not(.is-disabled)', function(event) {
-        event.preventDefault();
-
-        // Check if multiselect - set selected states
-        if ( $contextualMenu.hasClass('ms-ContextualMenu--multiselect') ) {
-
-          // If already selected, remove selection; if not, add selection
-          if ( $(this).hasClass('is-selected') ) {
-            $(this).removeClass('is-selected');
-          }
-          else {
-            $(this).addClass('is-selected');
-          }
-
-        }
-        // All other contextual menu variants
-        else {
-
-          // Deselect all of the items and close any menus.
-          $('.ms-ContextualMenu-link')
-              .removeClass('is-selected')
-              .siblings('.ms-ContextualMenu')
-              .removeClass('is-open');
-
-          // Select this item.
-          $(this).addClass('is-selected');
-
-          // If this item has a menu, open it.
-          if ($(this).hasClass('ms-ContextualMenu-link--hasMenu')) {
-            $(this).siblings('.ms-ContextualMenu:first').addClass('is-open');
-
-            // Open the menu without bubbling up the click event,
-            // which can cause the menu to close.
-            event.stopPropagation();
-          }
-
-        }
-
-
-      });
-
-    });
-  };
-})(jQuery);
-
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
 (function ($) {
@@ -677,15 +714,15 @@ fabric.Breadcrumb.prototype = (function() {
   /** Change the highlighted date. */
   function changeHighlightedDate($picker, newYear, newMonth, newDay) {
 
-    /** All variables are optional. If not provided, default to the current value. */
-    if (newYear === null) {
-      newYear = $picker.get('highlight').year;
+    /** All letiables are optional. If not provided, default to the current value. */
+    if (typeof newYear === "undefined" || newYear === null) {
+      newYear = $picker.get("highlight").year;
     }
-    if (newMonth === null) {
-      newMonth = $picker.get('highlight').month;
+    if (typeof newMonth === "undefined" || newMonth === null) {
+      newMonth = $picker.get("highlight").month;
     }
-    if (newDay === null) {
-      newDay = $picker.get('highlight').date;
+    if (typeof newDay === "undefined" || newDay === null) {
+      newDay = $picker.get("highlight").date;
     }
 
     /** Update it. */
@@ -789,6 +826,163 @@ fabric.Breadcrumb.prototype = (function() {
   };
 })(jQuery);
 
+// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
+
+/**
+ * Dropdown Plugin
+ *
+ * Given .ms-Dropdown containers with generic <select> elements inside, this plugin hides the original
+ * dropdown and creates a new "fake" dropdown that can more easily be styled across browsers.
+ *
+ * @param  {jQuery Object}  One or more .ms-Dropdown containers, each with a dropdown (.ms-Dropdown-select)
+ * @return {jQuery Object}  The same containers (allows for chaining)
+ */
+(function ($) {
+    $.fn.Dropdown = function () {
+
+        /** Go through each dropdown we've been given. */
+        return this.each(function () {
+
+            var $dropdownWrapper = $(this),
+                $originalDropdown = $dropdownWrapper.children('.ms-Dropdown-select'),
+                $originalDropdownOptions = $originalDropdown.children('option'),
+                newDropdownTitle = '',
+                newDropdownItems = '',
+                newDropdownSource = '';
+
+            /** Go through the options to fill up newDropdownTitle and newDropdownItems. */
+            $originalDropdownOptions.each(function (index, option) {
+
+                /** If the option is selected, it should be the new dropdown's title. */
+                if (option.selected) {
+                    newDropdownTitle = option.text;
+                }
+
+                /** Add this option to the list of items. */
+                newDropdownItems += '<li class="ms-Dropdown-item' + ( (option.disabled) ? ' is-disabled"' : '"' ) + '>' + option.text + '</li>';
+
+            });
+
+            /** Insert the replacement dropdown. */
+            newDropdownSource = '<span class="ms-Dropdown-title">' + newDropdownTitle + '</span><ul class="ms-Dropdown-items">' + newDropdownItems + '</ul>';
+            $dropdownWrapper.append(newDropdownSource);
+
+            function _openDropdown(evt) {
+                if (!$dropdownWrapper.hasClass('is-disabled')) {
+
+                    /** First, let's close any open dropdowns on this page. */
+                    $dropdownWrapper.find('.is-open').removeClass('is-open');
+
+                    /** Stop the click event from propagating, which would just close the dropdown immediately. */
+                    evt.stopPropagation();
+
+                    /** Before opening, size the items list to match the dropdown. */
+                    var dropdownWidth = $(this).parents(".ms-Dropdown").width();
+                    $(this).next(".ms-Dropdown-items").css('width', dropdownWidth + 'px');
+
+                    /** Go ahead and open that dropdown. */
+                    $dropdownWrapper.toggleClass('is-open');
+                    $('.ms-Dropdown').each(function(){
+                        if ($(this)[0] !== $dropdownWrapper[0]) {
+                            $(this).removeClass('is-open');
+                        }
+                    });
+
+                    /** Temporarily bind an event to the document that will close this dropdown when clicking anywhere. */
+                    $(document).bind("click.dropdown", function() {
+                        $dropdownWrapper.removeClass('is-open');
+                        $(document).unbind('click.dropdown');
+                    });
+                }
+            }
+
+            /** Toggle open/closed state of the dropdown when clicking its title. */
+            $dropdownWrapper.on('click', '.ms-Dropdown-title', function(event) {
+                _openDropdown(event);
+            });
+
+            /** Keyboard accessibility */
+            $dropdownWrapper.on('keyup', function(event) {
+                var keyCode = event.keyCode || event.which;
+                // Open dropdown on enter or arrow up or arrow down and focus on first option
+                if (!$(this).hasClass('is-open')) {
+                    if (keyCode === 13 || keyCode === 38 || keyCode === 40) {
+                       _openDropdown(event);
+                       if (!$(this).find('.ms-Dropdown-item').hasClass('is-selected')) {
+                        $(this).find('.ms-Dropdown-item:first').addClass('is-selected');
+                       }
+                    }
+                }
+                else if ($(this).hasClass('is-open')) {
+                    // Up arrow focuses previous option
+                    if (keyCode === 38) {
+                        if ($(this).find('.ms-Dropdown-item.is-selected').prev().siblings().size() > 0) {
+                            $(this).find('.ms-Dropdown-item.is-selected').removeClass('is-selected').prev().addClass('is-selected');
+                        }
+                    }
+                    // Down arrow focuses next option
+                    if (keyCode === 40) {
+                        if ($(this).find('.ms-Dropdown-item.is-selected').next().siblings().size() > 0) {
+                            $(this).find('.ms-Dropdown-item.is-selected').removeClass('is-selected').next().addClass('is-selected');
+                        }
+                    }
+                    // Enter to select item
+                    if (keyCode === 13) {
+                        if (!$dropdownWrapper.hasClass('is-disabled')) {
+
+                            // Item text
+                            var selectedItemText = $(this).find('.ms-Dropdown-item.is-selected').text();
+
+                            $(this).find('.ms-Dropdown-title').html(selectedItemText);
+
+                            /** Update the original dropdown. */
+                            $originalDropdown.find("option").each(function(key, value) {
+                                if (value.text === selectedItemText) {
+                                    $(this).prop('selected', true);
+                                } else {
+                                    $(this).prop('selected', false);
+                                }
+                            });
+                            $originalDropdown.change();
+
+                            $(this).removeClass('is-open');
+                        }
+                    }
+                }
+
+                // Close dropdown on esc
+                if (keyCode === 27) {
+                    $(this).removeClass('is-open');
+                }
+            });
+
+            /** Select an option from the dropdown. */
+            $dropdownWrapper.on('click', '.ms-Dropdown-item', function () {
+                if (!$dropdownWrapper.hasClass('is-disabled') && !$(this).hasClass('is-disabled')) {
+
+                    /** Deselect all items and select this one. */
+                    $(this).siblings('.ms-Dropdown-item').removeClass('is-selected');
+                    $(this).addClass('is-selected');
+
+                    /** Update the replacement dropdown's title. */
+                    $(this).parents().siblings('.ms-Dropdown-title').html($(this).text());
+
+                    /** Update the original dropdown. */
+                    var selectedItemText = $(this).text();
+                    $originalDropdown.find("option").each(function(key, value) {
+                        if (value.text === selectedItemText) {
+                            $(this).prop('selected', true);
+                        } else {
+                            $(this).prop('selected', false);
+                        }
+                    });
+                    $originalDropdown.change();
+                }
+            });
+
+        });
+    };
+})(jQuery);
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
 /**
@@ -1027,102 +1221,6 @@ fabric.Breadcrumb.prototype = (function() {
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
 /**
- * Nav Bar Plugin
- */
-(function ($) {
-  $.fn.NavBar = function () {
-
-    /** Go through each nav bar we've been given. */
-    return this.each(function () {
-
-      var $navBar = $(this);
-
-      // Open the nav bar on mobile.
-      $navBar.on('click', '.js-openMenu', function(event) {
-        event.stopPropagation();
-        $navBar.toggleClass('is-open');
-      });
-
-      // Close the nav bar on mobile.
-      $navBar.click(function() {
-        if ($navBar.hasClass('is-open')) {
-          $navBar.removeClass('is-open');
-        }
-      });
-
-      // Set selected states and open/close menus.
-      $navBar.on('click', '.ms-NavBar-item:not(.is-disabled)', function(event) {
-        var $searchBox = $navBar.find('.ms-NavBar-item.ms-NavBar-item--search .ms-TextField-field');
-        event.stopPropagation();
-
-        // Prevent default actions from firing if links are not found.
-        if ($(this).children('.ms-NavBar-link').length === 0) {
-          event.preventDefault();
-        }
-
-        // Deselect all of the items.
-        $(this).siblings('.ms-NavBar-item').removeClass('is-selected');
-
-        // Close and blur the search box if it doesn't have text.
-        if ($searchBox.length > 0 && $searchBox.val().length === 0) {
-          $('.ms-NavBar-item.ms-NavBar-item--search').removeClass('is-open').find('.ms-TextField-field').blur();
-        }
-
-        // Does the selected item have a menu?
-        if ($(this).hasClass('ms-NavBar-item--hasMenu')) {
-          
-          // First, close any neighboring menus.
-          $(this).siblings('.ms-NavBar-item--hasMenu').children('.ms-ContextualMenu:first').removeClass('is-open');
-          
-          // Toggle 'is-open' to open or close it.
-          $(this).children('.ms-ContextualMenu:first').toggleClass('is-open');
-
-          // Toggle 'is-selected' to indicate whether it is active.
-          $(this).toggleClass('is-selected');
-        } else {
-          // Doesn't have a menu, so just select the item.
-          $(this).addClass('is-selected');
-
-          // Close the submenu and any open contextual menus.
-          $navBar.removeClass('is-open').find('.ms-ContextualMenu').removeClass('is-open');
-        }
-
-        // Is this the search box? Open it up and focus on the search field.
-        if ($(this).hasClass('ms-NavBar-item--search')) {
-          $(this).addClass('is-open');
-          $(this).find('.ms-TextField-field').focus();
-
-          // Close any open menus.
-          $navBar.find('.ms-ContextualMenu:first').removeClass('is-open');
-        }
-      });
-
-      // Prevent contextual menus from being hidden when clicking on them.
-      $navBar.on('click', '.ms-NavBar-item .ms-ContextualMenu', function(event) {
-        event.stopPropagation();
-
-        // Collapse the mobile "panel" for nav items.
-        $(this).removeClass('is-open');
-        $navBar.removeClass('is-open').find('.ms-NavBar-item--hasMenu').removeClass('is-selected');
-      });
-
-      // Hide any menus and close the search box when clicking anywhere in the document.
-      $(document).on('click', 'html', function() {
-		var $searchBox = $navBar.find('.ms-NavBar-item.ms-NavBar-item--search .ms-TextField-field');  
-        $navBar.find('.ms-NavBar-item').removeClass('is-selected').find('.ms-ContextualMenu').removeClass('is-open');
-
-        // Close and blur the search box if it doesn't have text.
-        if ($searchBox.length > 0 && $searchBox.val().length === 0) {
-          $navBar.find('.ms-NavBar-item.ms-NavBar-item--search').removeClass('is-open').find('.ms-TextField-field').blur();
-        }
-      });
-    });
-  };
-})(jQuery);
-
-// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
-
-/**
  * MessageBanner component
  *
  * A component to display error messages
@@ -1282,6 +1380,197 @@ fabric.MessageBanner.prototype = (function() {
         showBanner: _showBanner
     };
 }());
+
+// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
+
+/**
+ * Nav Bar Plugin
+ */
+(function ($) {
+  $.fn.NavBar = function () {
+
+    /** Go through each nav bar we've been given. */
+    return this.each(function () {
+
+      var $navBar = $(this);
+
+      // Open the nav bar on mobile.
+      $navBar.on('click', '.js-openMenu', function(event) {
+        event.stopPropagation();
+        $navBar.toggleClass('is-open');
+      });
+
+      // Close the nav bar on mobile.
+      $navBar.click(function() {
+        if ($navBar.hasClass('is-open')) {
+          $navBar.removeClass('is-open');
+        }
+      });
+
+      // Set selected states and open/close menus.
+      $navBar.on('click', '.ms-NavBar-item:not(.is-disabled)', function(event) {
+        var $searchBox = $navBar.find('.ms-NavBar-item.ms-NavBar-item--search .ms-TextField-field');
+        event.stopPropagation();
+
+        // Prevent default actions from firing if links are not found.
+        if ($(this).children('.ms-NavBar-link').length === 0) {
+          event.preventDefault();
+        }
+
+        // Deselect all of the items.
+        $(this).siblings('.ms-NavBar-item').removeClass('is-selected');
+
+        // Close and blur the search box if it doesn't have text.
+        if ($searchBox.length > 0 && $searchBox.val().length === 0) {
+          $('.ms-NavBar-item.ms-NavBar-item--search').removeClass('is-open').find('.ms-TextField-field').blur();
+        }
+
+        // Does the selected item have a menu?
+        if ($(this).hasClass('ms-NavBar-item--hasMenu')) {
+          
+          // First, close any neighboring menus.
+          $(this).siblings('.ms-NavBar-item--hasMenu').children('.ms-ContextualMenu:first').removeClass('is-open');
+          
+          // Toggle 'is-open' to open or close it.
+          $(this).children('.ms-ContextualMenu:first').toggleClass('is-open');
+
+          // Toggle 'is-selected' to indicate whether it is active.
+          $(this).toggleClass('is-selected');
+        } else {
+          // Doesn't have a menu, so just select the item.
+          $(this).addClass('is-selected');
+
+          // Close the submenu and any open contextual menus.
+          $navBar.removeClass('is-open').find('.ms-ContextualMenu').removeClass('is-open');
+        }
+
+        // Is this the search box? Open it up and focus on the search field.
+        if ($(this).hasClass('ms-NavBar-item--search')) {
+          $(this).addClass('is-open');
+          $(this).find('.ms-TextField-field').focus();
+
+          // Close any open menus.
+          $navBar.find('.ms-ContextualMenu:first').removeClass('is-open');
+        }
+      });
+
+      // Prevent contextual menus from being hidden when clicking on them.
+      $navBar.on('click', '.ms-NavBar-item .ms-ContextualMenu', function(event) {
+        event.stopPropagation();
+
+        // Collapse the mobile "panel" for nav items.
+        $(this).removeClass('is-open');
+        $navBar.removeClass('is-open').find('.ms-NavBar-item--hasMenu').removeClass('is-selected');
+      });
+
+      // Hide any menus and close the search box when clicking anywhere in the document.
+      $(document).on('click', 'html', function() {
+		var $searchBox = $navBar.find('.ms-NavBar-item.ms-NavBar-item--search .ms-TextField-field');  
+        $navBar.find('.ms-NavBar-item').removeClass('is-selected').find('.ms-ContextualMenu').removeClass('is-open');
+
+        // Close and blur the search box if it doesn't have text.
+        if ($searchBox.length > 0 && $searchBox.val().length === 0) {
+          $navBar.find('.ms-NavBar-item.ms-NavBar-item--search').removeClass('is-open').find('.ms-TextField-field').blur();
+        }
+      });
+    });
+  };
+})(jQuery);
+
+// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
+
+/**
+ * Panel Plugin
+ *
+ * Adds basic demonstration functionality to .ms-Panel components.
+ *
+ * @param  {jQuery Object}  One or more .ms-Panel components
+ * @return {jQuery Object}  The same components (allows for chaining)
+ */
+(function ($) {
+  $.fn.Panel = function () {
+
+    var pfx = ["webkit", "moz", "MS", "o", ""];
+
+    // Prefix function
+    function prefixedEvent(element, type, callback) {
+      for (var p = 0; p < pfx.length; p++) {
+        if (!pfx[p]) { type = type.toLowerCase(); }
+        element.addEventListener(pfx[p]+type, callback, false);
+      }
+    }
+
+    /** Go through each panel we've been given. */
+    return this.each(function () {
+
+      var $panel = $(this);
+      var $panelMain = $panel.find(".ms-Panel-main");
+
+      /** Hook to open the panel. */
+      $(".ms-PanelAction-close").on("click", function() {
+
+        // Display Panel first, to allow animations
+        $panel.addClass("ms-Panel-animateOut");
+
+      });
+
+      $(".ms-PanelAction-open").on("click", function() {
+
+        // Display Panel first, to allow animations
+        $panel.addClass("is-open");
+
+        // Add animation class
+        $panel.addClass("ms-Panel-animateIn");
+
+      });
+
+      prefixedEvent($panelMain[0], 'AnimationEnd', function(event) {
+        if (event.animationName.indexOf('Out') > -1) {
+
+          // Hide and Prevent ms-Panel-main from being interactive
+          $panel.removeClass('is-open');
+
+          // Remove animating classes for the next time we open panel
+          $panel.removeClass('ms-Panel-animateIn ms-Panel-animateOut');
+
+        }
+      });
+
+      // Pivots for sample page to show variant panel sizes
+      $(".panelVariant-item").on("click", function() {
+        var className = $(this).find('span').attr('class');
+
+        $(".panelVariant-item").removeClass('is-selected');
+        $(this).addClass('is-selected');
+
+        switch (className) {
+          case 'is-default':
+            $('.ms-Panel').removeClass().addClass('ms-Panel');
+            break;
+          case 'is-left':
+            $('.ms-Panel').removeClass().addClass('ms-Panel ms-Panel--left');
+            break;
+          case 'is-lightDismiss':
+            $('.ms-Panel').removeClass().addClass('ms-Panel ms-Panel--lightDismiss');
+            break;
+          case 'is-md':
+            $('.ms-Panel').removeClass().addClass('ms-Panel ms-Panel--md');
+            break;
+          case 'is-lgFixed':
+            $('.ms-Panel').removeClass().addClass('ms-Panel ms-Panel--lg ms-Panel--fixed');
+            break;
+          case 'is-lg':
+            $('.ms-Panel').removeClass().addClass('ms-Panel ms-Panel--lg');
+            break;
+          case 'is-xl':
+            $('.ms-Panel').removeClass().addClass('ms-Panel ms-Panel--xl');
+            break;
+        }
+      });
+    });
+
+  };
+})(jQuery);
 
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
@@ -1685,70 +1974,6 @@ var fabric = fabric || {};
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
 /**
- * Panel Plugin
- *
- * Adds basic demonstration functionality to .ms-Panel components.
- *
- * @param  {jQuery Object}  One or more .ms-Panel components
- * @return {jQuery Object}  The same components (allows for chaining)
- */
-(function ($) {
-  $.fn.Panel = function () {
-
-    var pfx = ["webkit", "moz", "MS", "o", ""];
-
-    // Prefix function
-    function prefixedEvent(element, type, callback) {
-      for (var p = 0; p < pfx.length; p++) {
-        if (!pfx[p]) { type = type.toLowerCase(); }
-        element.addEventListener(pfx[p]+type, callback, false);
-      }
-    }
-
-    /** Go through each panel we've been given. */
-    return this.each(function () {
-
-      var $panel = $(this);
-      var $panelMain = $panel.find(".ms-Panel-main");
-
-      /** Hook to open the panel. */
-      $(".ms-PanelAction-close").on("click", function() {
-
-        // Display Panel first, to allow animations
-        $panel.addClass("ms-Panel-animateOut");
-
-      });
-
-      $(".ms-PanelAction-open").on("click", function() {
-
-        // Display Panel first, to allow animations
-        $panel.addClass("is-open");
-
-        // Add animation class
-        $panel.addClass("ms-Panel-animateIn");
-
-      });
-
-      prefixedEvent($panelMain[0], 'AnimationEnd', function(event) {
-        if (event.animationName.indexOf('Out') > -1) {
-
-          // Hide and Prevent ms-Panel-main from being interactive
-          $panel.removeClass('is-open');
-
-          // Remove animating classes for the next time we open panel
-          $panel.removeClass('ms-Panel-animateIn ms-Panel-animateOut');
-
-        }
-      });
-
-    });
-
-  };
-})(jQuery);
-
-// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
-
-/**
  * Persona Card Plugin
  *
  * Adds basic demonstration functionality to .ms-PersonaCard components.
@@ -1949,146 +2174,6 @@ fabric.ProgressIndicator.prototype = (function() {
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
 /**
- * Spinner Component
- *
- * An animating activity indicator.
- *
- */
-
-/**
- * @namespace fabric
- */
-var fabric = fabric || {};
-
-/**
- * @param {HTMLDOMElement} target - The element the Spinner will attach itself to.
- */
-
-fabric.Spinner = function(target) {
-
-    var _target = target;
-    var eightSize = 0.179;
-    var circleObjects = [];
-    var animationSpeed = 90;
-    var interval;
-    var spinner;
-    var numCircles;
-    var offsetSize;
-    var fadeIncrement = 0;
-    var parentSize;
-
-    /**
-     * @function start - starts or restarts the animation sequence
-     * @memberOf fabric.Spinner
-     */
-    function start() {
-        interval = setInterval(function() {
-            var i = circleObjects.length;
-            while(i--) {
-                _fade(circleObjects[i]);
-            }
-        }, animationSpeed);
-    }
-
-    /**
-     * @function stop - stops the animation sequence
-     * @memberOf fabric.Spinner
-     */
-    function stop() {
-        clearInterval(interval);
-    }
-
-    //private methods
-
-    function _init() {
-        //for backwards compatibility
-        if (_target.className.indexOf("ms-Spinner") === -1) {
-            spinner = document.createElement("div");
-            spinner.className = "ms-Spinner";
-            _target.appendChild(spinner);
-        } else {
-            spinner = _target;
-        }
-
-        offsetSize = eightSize;
-        numCircles = 8;
-        parentSize = spinner.className.indexOf("large") > -1 ? 28 : 20;
-        _createCirclesAndArrange();
-        _initializeOpacities();
-        start();
-    }
-
-    function _initializeOpacities() {
-        var i = 0;
-        var j = 1;
-        var opacity;
-        fadeIncrement = 1 / numCircles;
-
-        for (i; i < numCircles; i++) {
-            var circleObject = circleObjects[i];
-            opacity = (fadeIncrement * j++);
-            _setOpacity(circleObject.element, opacity);
-        }
-    }
-
-    function _fade(circleObject) {
-        var opacity = _getOpacity(circleObject.element) - fadeIncrement;
-
-        if (opacity <= 0) {
-            opacity = 1;
-        }
-
-        _setOpacity(circleObject.element, opacity);
-    }
-
-    function _getOpacity(element) {
-        return parseFloat(window.getComputedStyle(element).getPropertyValue("opacity"));
-    }
-
-    function _setOpacity(element, opacity) {
-        element.style.opacity = opacity;
-    }
-
-    function _createCircle() {
-        var circle = document.createElement('div');
-        circle.className = "ms-Spinner-circle";
-        circle.style.width = circle.style.height = parentSize * offsetSize + "px";
-        return circle;
-    }
-
-    function _createCirclesAndArrange() {
-
-        var angle = 0;
-        var offset = parentSize * offsetSize;
-        var step = (2 * Math.PI) / numCircles;
-        var i = numCircles;
-        var circleObject;
-        var radius = (parentSize - offset) * 0.5;
-
-        while (i--) {
-            var circle = _createCircle();
-            var x = Math.round(parentSize * 0.5 + radius * Math.cos(angle) - circle.clientWidth * 0.5) - offset * 0.5;
-            var y = Math.round(parentSize * 0.5 + radius * Math.sin(angle) - circle.clientHeight * 0.5) - offset * 0.5;
-            spinner.appendChild(circle);
-            circle.style.left = x + 'px';
-            circle.style.top = y + 'px';
-            angle += step;
-            circleObject = { element:circle, j:i };
-            circleObjects.push(circleObject);
-        }
-    }
-
-    _init();
-
-    return {
-        start:start,
-        stop:stop
-    };
-};
-
-// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
-
-/**
  * SearchBox Plugin
  *
  * Adds basic demonstration functionality to .ms-SearchBox components.
@@ -2159,6 +2244,158 @@ fabric.Spinner = function(target) {
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 
 /**
+ * Spinner Component
+ *
+ * An animating activity indicator.
+ *
+ */
+
+/**
+ * @namespace fabric
+ */
+var fabric = fabric || {};
+
+/**
+ * @param {HTMLDOMElement} target - The element the Spinner will attach itself to.
+ */
+
+fabric.Spinner = function(target) {
+
+    var _target = target;
+    var eightSize = 0.2;
+    var circleObjects = [];
+    var animationSpeed = 90;
+    var interval;
+    var spinner;
+    var numCircles;
+    var offsetSize;
+    var fadeIncrement = 0;
+    var parentSize = 20;
+
+    /**
+     * @function start - starts or restarts the animation sequence
+     * @memberOf fabric.Spinner
+     */
+    function start() {
+        stop();
+        interval = setInterval(function() {
+            var i = circleObjects.length;
+            while(i--) {
+                _fade(circleObjects[i]);
+            }
+        }, animationSpeed);
+    }
+
+    /**
+     * @function stop - stops the animation sequence
+     * @memberOf fabric.Spinner
+     */
+    function stop() {
+        clearInterval(interval);
+    }
+
+    //private methods
+
+    function _init() {
+        _setTargetElement();
+        _setPropertiesForSize();
+        _createCirclesAndArrange();
+        _initializeOpacities();
+        start();
+    }
+
+    function _initializeOpacities() {
+        var i = 0;
+        var j = 1;
+        var opacity;
+        fadeIncrement = 1 / numCircles;
+
+        for (i; i < numCircles; i++) {
+            var circleObject = circleObjects[i];
+            opacity = (fadeIncrement * j++);
+            _setOpacity(circleObject.element, opacity);
+        }
+    }
+
+    function _fade(circleObject) {
+        var opacity = _getOpacity(circleObject.element) - fadeIncrement;
+
+        if (opacity <= 0) {
+            opacity = 1;
+        }
+
+        _setOpacity(circleObject.element, opacity);
+    }
+
+    function _getOpacity(element) {
+        return parseFloat(window.getComputedStyle(element).getPropertyValue("opacity"));
+    }
+
+    function _setOpacity(element, opacity) {
+        element.style.opacity = opacity;
+    }
+
+    function _createCircle() {
+        var circle = document.createElement('div');
+        circle.className = "ms-Spinner-circle";
+        circle.style.width = circle.style.height = parentSize * offsetSize + "px";
+        return circle;
+    }
+
+    function _createCirclesAndArrange() {
+
+        var angle = 0;
+        var offset = parentSize * offsetSize;
+        var step = (2 * Math.PI) / numCircles;
+        var i = numCircles;
+        var circleObject;
+        var radius = (parentSize - offset) * 0.5;
+
+        while (i--) {
+            var circle = _createCircle();
+            var x = Math.round(parentSize * 0.5 + radius * Math.cos(angle) - circle.clientWidth * 0.5) - offset * 0.5;
+            var y = Math.round(parentSize * 0.5 + radius * Math.sin(angle) - circle.clientHeight * 0.5) - offset * 0.5;
+            spinner.appendChild(circle);
+            circle.style.left = x + 'px';
+            circle.style.top = y + 'px';
+            angle += step;
+            circleObject = { element:circle, j:i };
+            circleObjects.push(circleObject);
+        }
+    }
+
+    function _setPropertiesForSize() {
+        if (spinner.className.indexOf("large") > -1) {
+            parentSize = 28;
+            eightSize = 0.179;
+        }
+
+        offsetSize = eightSize;
+        numCircles = 8;
+    }
+
+    function _setTargetElement() {
+        //for backwards compatibility
+        if (_target.className.indexOf("ms-Spinner") === -1) {
+            spinner = document.createElement("div");
+            spinner.className = "ms-Spinner";
+            _target.appendChild(spinner);
+        } else {
+            spinner = _target;
+        }
+    }
+
+    _init();
+
+    return {
+        start:start,
+        stop:stop
+    };
+};
+
+// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
+
+/**
  * Text Field Plugin
  *
  * Adds basic demonstration functionality to .ms-TextField components.
@@ -2178,6 +2415,11 @@ fabric.Spinner = function(target) {
         /** Hide the label on click. */
         $(this).on('click', function () {
           $(this).find('.ms-Label').hide();
+        });
+        
+        /** Hide the label on focus. */
+        $(this).find('.ms-TextField-field').on('focus', function () {
+          $(this).siblings('.ms-Label').hide();
         });
 
         /** Show the label again when leaving the field. */
@@ -2206,162 +2448,4 @@ fabric.Spinner = function(target) {
 
     });
   };
-})(jQuery);
-
-// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
-
-/**
- * Dropdown Plugin
- * 
- * Given .ms-Dropdown containers with generic <select> elements inside, this plugin hides the original
- * dropdown and creates a new "fake" dropdown that can more easily be styled across browsers.
- * 
- * @param  {jQuery Object}  One or more .ms-Dropdown containers, each with a dropdown (.ms-Dropdown-select)
- * @return {jQuery Object}  The same containers (allows for chaining)
- */
-(function ($) {
-    $.fn.Dropdown = function () {
-
-        /** Go through each dropdown we've been given. */
-        return this.each(function () {
-
-            var $dropdownWrapper = $(this),
-                $originalDropdown = $dropdownWrapper.children('.ms-Dropdown-select'),
-                $originalDropdownOptions = $originalDropdown.children('option'),
-                newDropdownTitle = '',
-                newDropdownItems = '',
-                newDropdownSource = '';
-
-            /** Go through the options to fill up newDropdownTitle and newDropdownItems. */
-            $originalDropdownOptions.each(function (index, option) {
-        
-                /** If the option is selected, it should be the new dropdown's title. */
-                if (option.selected) {
-                    newDropdownTitle = option.text;
-                }
-
-                /** Add this option to the list of items. */
-                newDropdownItems += '<li class="ms-Dropdown-item' + ( (option.disabled) ? ' is-disabled"' : '"' ) + '>' + option.text + '</li>';
-            
-            });
-
-            /** Insert the replacement dropdown. */
-            newDropdownSource = '<span class="ms-Dropdown-title">' + newDropdownTitle + '</span><ul class="ms-Dropdown-items">' + newDropdownItems + '</ul>';
-            $dropdownWrapper.append(newDropdownSource);
-
-            function _openDropdown(evt) {
-                if (!$dropdownWrapper.hasClass('is-disabled')) {
-
-                    /** First, let's close any open dropdowns on this page. */
-                    $dropdownWrapper.find('.is-open').removeClass('is-open');
-
-                    /** Stop the click event from propagating, which would just close the dropdown immediately. */
-                    evt.stopPropagation();
-
-                    /** Before opening, size the items list to match the dropdown. */
-                    var dropdownWidth = $(this).parents(".ms-Dropdown").width();
-                    $(this).next(".ms-Dropdown-items").css('width', dropdownWidth + 'px');
-                
-                    /** Go ahead and open that dropdown. */
-                    $dropdownWrapper.toggleClass('is-open');
-                    $('.ms-Dropdown').each(function(){
-                        if ($(this)[0] !== $dropdownWrapper[0]) {
-                            $(this).removeClass('is-open');
-                        }
-                    });
-
-                    /** Temporarily bind an event to the document that will close this dropdown when clicking anywhere. */
-                    $(document).bind("click.dropdown", function() {
-                        $dropdownWrapper.removeClass('is-open');
-                        $(document).unbind('click.dropdown');
-                    });
-                }
-            }
-
-            /** Toggle open/closed state of the dropdown when clicking its title. */
-            $dropdownWrapper.on('click', '.ms-Dropdown-title', function(event) {
-                _openDropdown(event);
-            });
-
-            /** Keyboard accessibility */
-            $dropdownWrapper.on('keyup', function(event) {
-                var keyCode = event.keyCode || event.which;
-                // Open dropdown on enter or arrow up or arrow down and focus on first option
-                if (!$(this).hasClass('is-open')) {
-                    if (keyCode === 13 || keyCode === 38 || keyCode === 40) {
-                       _openDropdown(event);
-                       if (!$(this).find('.ms-Dropdown-item').hasClass('is-selected')) {
-                        $(this).find('.ms-Dropdown-item:first').addClass('is-selected');
-                       }
-                    }
-                }
-                else if ($(this).hasClass('is-open')) {
-                    // Up arrow focuses previous option
-                    if (keyCode === 38) {
-                        if ($(this).find('.ms-Dropdown-item.is-selected').prev().siblings().size() > 0) {
-                            $(this).find('.ms-Dropdown-item.is-selected').removeClass('is-selected').prev().addClass('is-selected');
-                        }
-                    }
-                    // Down arrow focuses next option
-                    if (keyCode === 40) {
-                        if ($(this).find('.ms-Dropdown-item.is-selected').next().siblings().size() > 0) {
-                            $(this).find('.ms-Dropdown-item.is-selected').removeClass('is-selected').next().addClass('is-selected');
-                        }
-                    }
-                    // Enter to select item
-                    if (keyCode === 13) {
-                        if (!$dropdownWrapper.hasClass('is-disabled')) {
-
-                            // Item text
-                            var selectedItemText = $(this).find('.ms-Dropdown-item.is-selected').text();
-
-                            $(this).find('.ms-Dropdown-title').html(selectedItemText);
-
-                            /** Update the original dropdown. */
-                            $originalDropdown.find("option").each(function(key, value) {
-                                if (value.text === selectedItemText) {
-                                    $(this).prop('selected', true);
-                                } else {
-                                    $(this).prop('selected', false);
-                                }
-                            });
-                            $originalDropdown.change();
-
-                            $(this).removeClass('is-open');
-                        }
-                    }                
-                }
-
-                // Close dropdown on esc
-                if (keyCode === 27) {
-                    $(this).removeClass('is-open');
-                }
-            });
-
-            /** Select an option from the dropdown. */
-            $dropdownWrapper.on('click', '.ms-Dropdown-item', function () {
-                if (!$dropdownWrapper.hasClass('is-disabled')) {
-
-                    /** Deselect all items and select this one. */
-                    $(this).siblings('.ms-Dropdown-item').removeClass('is-selected');
-                    $(this).addClass('is-selected');
-
-                    /** Update the replacement dropdown's title. */
-                    $(this).parents().siblings('.ms-Dropdown-title').html($(this).text());
-
-                    /** Update the original dropdown. */
-                    var selectedItemText = $(this).text();
-                    $originalDropdown.find("option").each(function(key, value) {
-                        if (value.text === selectedItemText) {
-                            $(this).prop('selected', true);
-                        } else {
-                            $(this).prop('selected', false);
-                        }
-                    });
-                    $originalDropdown.change();
-                }
-            });
-
-        });
-    };
 })(jQuery);
