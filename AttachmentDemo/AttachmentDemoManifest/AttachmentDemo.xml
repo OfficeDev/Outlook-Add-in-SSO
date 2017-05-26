@@ -16,8 +16,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Save attachments to OneDrive" />
   <Description DefaultValue="Saves attachments to your OneDrive"/>
-  <IconUrl DefaultValue="~remoteAppUrl/Images/icon64.png"/>
-  <HighResolutionIconUrl DefaultValue="~remoteAppUrl/Images/icon128.png"/>
+  <IconUrl DefaultValue="~remoteAppUrl/Images/add-in-icon-lo-res.png"/>
+  <HighResolutionIconUrl DefaultValue="~remoteAppUrl/Images/add-in-icon-hi-res.png"/>
 
   <SupportUrl DefaultValue="https://github.com/jasonjoh/attachments-demo/issues" />
 
@@ -76,9 +76,10 @@
                     <Description resid="saveAllAttachmentsDesc" />
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="icon16" />
-                    <bt:Image size="32" resid="icon32" />
-                    <bt:Image size="80" resid="icon80" />
+                    <bt:Image size="16" resid="save-all-icon16" />
+                    <bt:Image size="32" resid="save-all-icon32" />
+                    <bt:Image size="64" resid="save-all-icon64" />
+                    <bt:Image size="80" resid="save-all-icon80" />
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>saveAllAttachments</FunctionName>
@@ -92,9 +93,10 @@
                     <Description resid="paneReadSuperTipDescription" />
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="icon16" />
-                    <bt:Image size="32" resid="icon32" />
-                    <bt:Image size="80" resid="icon80" />
+                    <bt:Image size="16" resid="open-pane-icon16" />
+                    <bt:Image size="32" resid="open-pane-icon32" />
+                    <bt:Image size="64" resid="open-pane-icon64" />
+                    <bt:Image size="80" resid="open-pane-icon80" />
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
                     <SourceLocation resid="messageReadTaskPaneUrl" />
@@ -111,9 +113,15 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="icon16" DefaultValue="~remoteAppUrl/Images/icon16.png"/>
-        <bt:Image id="icon32" DefaultValue="~remoteAppUrl/Images/icon32.png"/>
-        <bt:Image id="icon80" DefaultValue="~remoteAppUrl/Images/icon80.png"/>
+        <bt:Image id="save-all-icon16" DefaultValue="~remoteAppUrl/Images/save-all-16.png"/>
+        <bt:Image id="save-all-icon32" DefaultValue="~remoteAppUrl/Images/save-all-32.png"/>
+        <bt:Image id="save-all-icon64" DefaultValue="~remoteAppUrl/Images/save-all-64.png"/>
+        <bt:Image id="save-all-icon80" DefaultValue="~remoteAppUrl/Images/save-all-80.png"/>
+
+        <bt:Image id="open-pane-icon16" DefaultValue="~remoteAppUrl/Images/open-pane-16.png"/>
+        <bt:Image id="open-pane-icon32" DefaultValue="~remoteAppUrl/Images/open-pane-32.png"/>
+        <bt:Image id="open-pane-icon64" DefaultValue="~remoteAppUrl/Images/open-pane-64.png"/>
+        <bt:Image id="open-pane-icon80" DefaultValue="~remoteAppUrl/Images/open-pane-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="functionFile" DefaultValue="~remoteAppUrl/Functions/FunctionFile.html"/>

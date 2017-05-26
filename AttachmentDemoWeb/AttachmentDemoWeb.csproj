@@ -86,6 +86,16 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
+    <Content Include="Images\add-in-icon-hi-res.png" />
+    <Content Include="Images\add-in-icon-lo-res.png" />
+    <Content Include="Images\open-pane-16.png" />
+    <Content Include="Images\open-pane-32.png" />
+    <Content Include="Images\open-pane-64.png" />
+    <Content Include="Images\open-pane-80.png" />
+    <Content Include="Images\save-all-16.png" />
+    <Content Include="Images\save-all-32.png" />
+    <Content Include="Images\save-all-64.png" />
+    <Content Include="Images\save-all-80.png" />
     <Content Include="Scripts\helpers.js" />
     <Content Include="Scripts\jquery-3.1.1.slim.min.map" />
     <Content Include="Scripts\jquery-3.1.1.min.map" />
@@ -106,12 +116,6 @@
     <Content Include="Content\OfficeThemes.css" />
     <Content Include="Functions\FunctionFile.html" />
     <Content Include="Functions\FunctionFile.js" />
-    <Content Include="Images\Close.png" />
-    <Content Include="Images\Icon128.png" />
-    <Content Include="Images\Icon16.png" />
-    <Content Include="Images\Icon32.png" />
-    <Content Include="Images\Icon64.png" />
-    <Content Include="Images\Icon80.png" />
     <Content Include="MessageRead.css" />
     <Content Include="MessageRead.html" />
     <Content Include="MessageRead.js" />
