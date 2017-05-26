@@ -8,28 +8,24 @@
           xsi:type="MailApp">
 
   <!-- Begin Basic Settings: Add-in metadata, used for all versions of Office unless override provided. -->
-
-  <!-- IMPORTANT! Id must be unique for your add-in, if you reuse this manifest ensure that you change this id to a new GUID. -->
   <Id>54ad5d2b-8352-46a7-8fc7-df772bbc5c9e</Id>
 
   <!--Version. Updates from the store only get triggered if there is a version change. -->
   <Version>1.0.0.0</Version>
-  <ProviderName>[Provider name]</ProviderName>
+  <ProviderName>Outlook Dev Center</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <!-- The display name of your add-in. Used on the store and various places of the Office UI such as the add-ins dialog. -->
-  <DisplayName DefaultValue="AttachmentDemo" />
-  <Description DefaultValue="AttachmentDemo"/>
+  <DisplayName DefaultValue="Save attachments to OneDrive" />
+  <Description DefaultValue="Saves attachments to your OneDrive"/>
   <IconUrl DefaultValue="~remoteAppUrl/Images/icon64.png"/>
+  <HighResolutionIconUrl DefaultValue="~remoteAppUrl/Images/icon128.png"/>
 
-  <SupportUrl DefaultValue="http://www.contoso.com" />
-  <!-- Domains that will be allowed when navigating. For example, if you use ShowTaskpane and then have an href link, navigation will only be allowed if the domain is on this list. -->
+  <SupportUrl DefaultValue="https://github.com/jasonjoh/attachments-demo/issues" />
+
   <AppDomains>
-    <AppDomain>AppDomain1</AppDomain>
-    <AppDomain>AppDomain2</AppDomain>
-    <AppDomain>AppDomain3</AppDomain>
+    <AppDomain>https://login.microsoftonline.com</AppDomain>
   </AppDomains>
   <!--End Basic Settings. -->
-  
+
   <Hosts>
     <Host Name="Mailbox" />
   </Hosts>
@@ -47,7 +43,7 @@
     </Form>
   </FormSettings>
 
-  <Permissions>ReadWriteItem</Permissions>
+  <Permissions>ReadItem</Permissions>
   <Rule xsi:type="RuleCollection" Mode="Or">
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read" />
   </Rule>
@@ -55,7 +51,7 @@
 
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Requirements>
-      <bt:Sets DefaultMinVersion="1.3">
+      <bt:Sets DefaultMinVersion="1.5">
         <bt:Set Name="Mailbox" />
       </bt:Sets>
     </Requirements>
@@ -68,12 +64,27 @@
 
           <!-- Message Read -->
           <ExtensionPoint xsi:type="MessageReadCommandSurface">
-            <!-- Use the default tab of the ExtensionPoint or create your own with <CustomTab id="myTab"> -->
+            <!-- Use the default tab of the ExtensionPoint -->
             <OfficeTab id="TabDefault">
-              <!-- Up to 6 Groups added per Tab -->
               <Group id="msgReadGroup">
                 <Label resid="groupLabel" />
-                <!-- Launch the add-in : task pane button -->
+                <!-- UI-less button to save all attachments -->
+                <Control xsi:type="Button" id="msgReadSaveAttachments">
+                  <Label resid="saveAllAttachmentsLabel" />
+                  <Supertip>
+                    <Title resid="saveAllAttachmentsTitle" />
+                    <Description resid="saveAllAttachmentsDesc" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16" />
+                    <bt:Image size="32" resid="icon32" />
+                    <bt:Image size="80" resid="icon80" />
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>saveAllAttachments</FunctionName>
+                  </Action>
+                </Control>
+                <!-- Open task pane to save individual attachments -->
                 <Control xsi:type="Button" id="msgReadOpenPaneButton">
                   <Label resid="paneReadButtonLabel" />
                   <Supertip>
@@ -109,13 +120,15 @@
         <bt:Url id="messageReadTaskPaneUrl" DefaultValue="~remoteAppUrl/MessageRead.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="groupLabel" DefaultValue="My Add-in Group"/>
-        <bt:String id="customTabLabel"  DefaultValue="My Add-in Tab"/>
-        <bt:String id="paneReadButtonLabel" DefaultValue="Display all properties"/>
-        <bt:String id="paneReadSuperTipTitle" DefaultValue="Get all properties"/>
+        <bt:String id="groupLabel" DefaultValue="Save to OneDrive"/>
+        <bt:String id="saveAllAttachmentsLabel" DefaultValue="Save all attachments"/>
+        <bt:String id="saveAllAttachmentsTitle" DefaultValue="Save all attachments"/>
+        <bt:String id="paneReadButtonLabel" DefaultValue="Choose attachments"/>
+        <bt:String id="paneReadSuperTipTitle" DefaultValue="Choose attachments to save"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="paneReadSuperTipDescription" DefaultValue="Opens a pane displaying all available properties. This is an example of a button that opens a task pane."/>
+        <bt:String id="saveAllAttachmentsDesc" DefaultValue="Saves all attachments to the Outlook Attachments folder in your OneDrive. This will overwrite any files that already exist with the same name."/>
+        <bt:String id="paneReadSuperTipDescription" DefaultValue="Opens a pane so you can choose which attachments to save."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
