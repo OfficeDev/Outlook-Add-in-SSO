@@ -1,4 +1,5 @@
-﻿using AttachmentDemoWeb.Models;
+﻿// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE.txt in the project root for license information.
+using AttachmentDemoWeb.Models;
 using Microsoft.Graph;
 using Newtonsoft.Json;
 using System;

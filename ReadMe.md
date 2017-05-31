@@ -1,32 +1,41 @@
 # AttachmentsDemo Sample Mail App #
-*This is based on the sample mail app originally [shown by Andrew Salamatov at the SharePoint Conference 2014](http://channel9.msdn.com/Events/SharePoint-Conference/2014/SPC391).*
 
-The sample implements a read-mode mail app that activates for items with attachments. It allows the user to save all attachments to their OneDrive for Business. The sample illustrates the following concepts:
+The sample implements an Outlook add-in that adds buttons to the Outlook ribbon. It allows the user to save all attachments to their OneDrive. The sample illustrates the following concepts:
  
-- Implementing a [read-mode mail app](http://msdn.microsoft.com/en-us/library/office/fp161135(v=office.15).aspx)
-- Implementing a WebAPI to [retrieve attachments via a callback token](http://msdn.microsoft.com/en-us/library/office/dn148008(v=office.15).aspx)
-- Using the [Discovery Service](http://msdn.microsoft.com/en-us/office/office365/api/discovery-service-rest-operations) to find a user's OneDrive endpoint
-- Using the [Files REST API](http://msdn.microsoft.com/en-us/office/office365/api/files-rest-operations) to create files in OneDrive for Business
+- Adding [add-in command buttons](https://dev.office.com/docs/add-ins/outlook/manifests/define-add-in-commands) to the Outlook ribbon when reading mail, including a UI-less button and a button that opens a task pane
+- Implementing a WebAPI to [retrieve attachments via a callback token and the Outlook REST API](https://dev.office.com/docs/add-ins/outlook/use-rest-api)
+- Authenticating to the user's OneDrive using the OAuth2 implicit flow via the [office-js-helpers library](https://github.com/OfficeDev/office-js-helpers).
+- Using the [Microsoft Graph API](https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/resources/onedrive) to create files in OneDrive.
 
 ## Configuring the Sample ##
 
 Before you run the sample, you'll need to do a few things to make it work properly.
 
-1. You need an Office 365 tenant. While mail apps will work with on-premise installations of Exchange, the Files REST API requires Office 365. If you don't already have an Office 365 tenant, you can get an Office 365 Developer Subscription, either through an existing MSDN subscription, or via a [free trial](https://portal.microsoftonline.com/Signup/MainSignUp.aspx?OfferId=6881A1CB-F4EB-4db3-9F18-388898DAF510&DL=DEVELOPERPACK). Lots of good information on this [here](http://msdn.microsoft.com/en-us/office/office365/howto/setup-development-environment).
-2. You need to register the sample application in your tenant's Azure Active Directory in order to obtain a client ID and client secret for accessing the Files REST API. There's a walkthrough of adding an application via the Azure Management Portal [here](http://msdn.microsoft.com/en-us/library/azure/dn132599.aspx). The important values are:
+1. You need an Office 365 tenant or Outlook.com account. While mail apps will work with on-premise installations of Exchange, the Microsoft Graph API requires Office 365 or Outlook.com.
+2. You need to register the sample application in the [Microsoft Application Registration Portal](https://apps.dev.microsoft.com) in order to obtain an app ID for accessing the Microsoft Graph API.
+    1. Browse to the [Microsoft Application Registration Portal](https://apps.dev.microsoft.com). If you're not asked to sign in, click the **Go to app list** button and sign in with either your Microsoft account (Outlook.com), or your work or school account (Office 365). Once you're signed in, click the **Add an app** button. Enter `AttachmentsDemo` for the name and click **Create application**.
+    1. Locate the **Platforms** section, and click **Add Platform**. Choose **Web**, then enter `https://localhost:44349/MessageRead.html` under **Redirect URIs**. Click **Save** to complete the registration. Copy the **Application Id** and save it. We'll need those values soon.
+        > **Note:** The port number in the redirect URI (`44349`) may be different on your development machine. You can find the correct port number for your machine by selecting the **AttachmentDemoWeb** project in **Solution Explorer**, then looking at the **SSL URL** setting under **Development Server** in the properties window.
 
-	- Name: AttachmentsDemo
-	- Type: Web Application and/or Web API
-	- Sign-on URL: The SSL URL of the AttachmentsDemoWeb project in the solution. For example, if you're running it in Visual Studio, it is probably something like "https://localhost:44307".
-	- App ID URI: Same as Sign-on URL.
-	- Permissions to other Applications: Office 365 SharePoint Online, set Delegated Permissions to enable "Edit or delete users' files".
+Here's what the details of your app registration should look like when you are done.
 
-3. Get the client ID from the app's registration in the Azure Management Portal, and generate a key for the app. This is done on the "Configure" tab of the app in the portal. Copy the client ID into the **ClientId** variable, and copy the key into the **ClientSecret** variable. These are both found in OAuthController.cs.
-4. Update the reference to the EWS Managed API (Microsoft.Exchange.WebServices.Data). You need version 2.2, so if you have an older version already installed, you need to update. Download details can be found on [GitHub](https://github.com/OfficeDev/ews-managed-api/blob/master/README.md).
+![The completed app registration](readme-images/app-registration.PNG)
+
+Replace the `YOUR APP ID HERE` value in `authconfig.js` with the application ID you generated as part of the app registration process.
 
 ## Running the Sample ##
 
-You can run the sample right from Visual Studio. You should be prompted for a user account and password. Be sure to use a user in your Office 365 tenant. The mail app will be installed for that user, and Outlook Web Access will open. Select any message with file attachments, and you should see an **AttachmentsDemo** button in the reading pane.
+You can run the sample right from Visual Studio. Select the **AttachmentDemo** project in **Solution Explorer**, then choose the **Start Action** value you want (under **Add-in** in the properties window). You can choose any installed browser to launch Outlook on the web, or you can choose **Office Desktop Client** to launch Outlook. If you choose **Office Desktop Client**, be sure to configure Outlook to connect to the Office 365 or Outlook.com user you want to install the add-in for.
+
+Press **F5** to build and debug the project. You should be prompted for a user account and password. Be sure to use a user in your Office 365 tenant, or an Outlook.com account. The add-in will be installed for that user, and either Outlook on the web or Outlook will open. Select any message, and you should see the add-in buttons on the Outlook ribbon.
+
+**Add-in in Outlook on desktop**
+
+![The add-in buttons on the ribbon in Outlook on the desktop](readme-images/buttons-outlook.PNG)
+
+** Add-in in Outlook on the web**
+
+![The add-in buttons in Outlook on the web](readme-images/buttons-owa.PNG)
 
 ## Copyright ##
 
