@@ -130,6 +130,7 @@
     <Content Include="Scripts\jquery-3.1.1.slim.min.js" />
     <None Include="Scripts\Office\1\outlook-win32.debug-vsdoc.js" />
     <None Include="Scripts\Office\1\office-vsdoc.js" />
+    <Content Include="Scripts\office.helpers.js" />
     <Content Include="Scripts\office.helpers.min.js" />
     <Content Include="Scripts\Office\1\access-web-16.00.debug.js" />
     <Content Include="Scripts\Office\1\access-web-16.00.js" />

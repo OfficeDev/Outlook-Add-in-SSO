@@ -160,7 +160,7 @@
         showSpinner();
 
         authenticator
-            .authenticate("Microsoft")
+            .authenticate(OfficeHelpers.DefaultEndpoints.Microsoft)
             .then(function (token) {
                 // Get callback token, which grants read access to the current message
                 // via the Outlook API

@@ -19,7 +19,7 @@
   <IconUrl DefaultValue="~remoteAppUrl/Images/add-in-icon-lo-res.png"/>
   <HighResolutionIconUrl DefaultValue="~remoteAppUrl/Images/add-in-icon-hi-res.png"/>
 
-  <SupportUrl DefaultValue="https://github.com/jasonjoh/attachments-demo/issues" />
+  <SupportUrl DefaultValue="https://github.com/OfficeDev/outlook-add-in-attachments-demo/issues" />
 
   <AppDomains>
     <AppDomain>https://login.microsoftonline.com</AppDomain>
