@@ -21,7 +21,7 @@ When you're done, the **Web API** section should look similar to the following:
 ### Add Microsoft Graph Permissions
 
 1. Locate the **Microsoft Graph Permissions** section in the app registration. Next to **Delegated Permissions**, click **Add**.
-1. Select **Files.ReadWrite**, **Mail.Read**, and **profile**. Click **OK**.
+1. Select **Files.ReadWrite**, **Mail.Read**, **offline_access**, **openid**, and **profile**. Click **OK**.
 
 When you're done, the **Microsoft Graph Permissions** section should looke like the following:
 
@@ -123,6 +123,21 @@ Finally, install the Microsoft Authentication Library (MSAL). This is a preview 
 ### Configure OWIN middleware
 
 We're going to use OWIN to handle parsing and validating the access token. In order to get that to work, we need to setup the proper OWIN middleware using an OWIN startup class. We'll also add a custom token provider class that can get the signing tokens from the Azure endpoints to perform validation.
+
+#### Add app registration info to web.config
+
+1. Open the `.\AttachmentDemoWeb\Web.config` file. Add the following XML after the first `<configuration>` element:
+
+    ```XML
+    <appSettings>
+        <add key="ida:AppId" value="YOUR APP ID HERE"/>
+        <add key="ida:AppPassword" value="YOUR APP PASSWORD HERE"/>
+        <add key="ida:RedirectUri" value="https://localhost:44349"/>
+    </appSettings>
+    ```
+1. Replace `YOUR APP ID HERE` with the application ID from your app registration.
+1. Replace `YOUR APP PASSWORD HERE` with the application password from your app registration.
+1. If you are using a different port on your local machine, update the port number in the `ida:RedirectUri` value to match.
 
 #### Add the custom token provider
 
@@ -230,6 +245,7 @@ We're going to use OWIN to handle parsing and validating the access token. In or
     using Microsoft.Owin.Security.Jwt;
     using Microsoft.Owin.Security.OAuth;
     using Owin;
+    using System.Configuration;
     using System.IdentityModel.Tokens;
 
     [assembly: OwinStartup(typeof(AttachmentDemoWeb.Startup))]
@@ -244,7 +260,7 @@ We're going to use OWIN to handle parsing and validating the access token. In or
                 var tokenValidationParms = new TokenValidationParameters
                 {
                     // Audience MUST be the application ID of the app
-                    ValidAudience = "YOUR APP ID HERE",
+                    ConfigurationManager.AppSettings["ida:AppId"],
                     // Since this is multi-tenant we will validate the issuer in the controller
                     ValidateIssuer = false,
                     SaveSigninToken = true
@@ -259,4 +275,277 @@ We're going to use OWIN to handle parsing and validating the access token. In or
         }
     }
     ```
-1. Replace `YOUR APP ID HERE` with the application ID from your app registration.
+
+### Modify the SaveAttachmentsController class
+
+The next step is to modify the controller to check for a bearer token. We want to preserve the existing functionality for clients that don't support SSO, so if there is no bearer token, we'll invoke the existing method.
+
+1. Open the `.\AttachmentDemoWeb\Controllers\SaveAttachmentsController.cs` file. Add the following using statements at the top of the file:
+
+    ```csharp
+    using System.Linq;
+    using System.Security.Claims;
+    ```
+
+1. Replace the following line:
+
+    ```csharp
+    public async Task<IHttpActionResult> Post([FromBody]SaveAttachmentRequest request)
+    ```
+
+    with the following:
+
+    ```csharp
+    private async Task<IHttpActionResult> SaveAttachmentsWithDistinctTokens(SaveAttachmentRequest request)
+    ```
+1. Add the following method to the `SaveAttachmentsController` class:
+
+    ```csharp
+    public async Task<IHttpActionResult> Post([FromBody]SaveAttachmentRequest request)
+    {
+        if (Request.Headers.Contains("Authorization"))
+        {
+            // Request contains bearer token, validate it
+            var scopeClaim = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/scope");
+            if (scopeClaim != null)
+            {
+                // Check the allowed scopes
+                string[] addinScopes = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/scope").Value.Split(' ');
+                if (!addinScopes.Contains("access_as_user"))
+                {
+                    return BadRequest("The bearer token is missing the required scope.");
+                }
+            }
+            else
+            {
+                return BadRequest("The bearer token is invalid.");
+            }
+
+            var issuerClaim = ClaimsPrincipal.Current.FindFirst("iss");
+            var tenantIdClaim = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid");
+            if (issuerClaim != null && tenantIdClaim != null)
+            {
+                // validate the issuer
+                string expectedIssuer = string.Format("https://login.microsoftonline.com/{0}/v2.0", tenantIdClaim.Value);
+                if (string.Compare(issuerClaim.Value, expectedIssuer, StringComparison.OrdinalIgnoreCase) != 0)
+                {
+                    return BadRequest("The token issuer is invalid.");
+                }
+            }
+            else
+            {
+                return BadRequest("The bearer token is invalid.");
+            }
+
+            // Passed validation, process the request
+            return await SaveAttachmentsWithSsoToken(request);
+        }
+        else
+        {
+            // No bearer token, so this is a request without SSO
+            // Access tokens are included in the request
+            return await SaveAttachmentsWithDistinctTokens(request);
+        }
+    }
+    ```
+
+Let's take a look at what we did there. We moved the existing functionality to a private method, and created a new public `Post` method that checks for the bearer token and either calls a method to save with an SSO token or calls the method to use the existing non-SSO method as appropriate. Now we need to implement the `SaveAttachmentsWithSsoToken` method.
+
+1. Add the followin `using` statements to the `.\AttachmentDemoWeb\Controllers\SaveAttachmentsController.cs` file.
+
+    ```csharp
+    using Microsoft.Identity.Client;
+    using System.Configuration;
+    using System.IdentityModel.Tokens;
+    ```
+1. Add the following method to the `SaveAttachmentsController` class:
+
+    ```csharp
+    private async Task<IHttpActionResult> SaveAttachmentsWithSsoToken(SaveAttachmentRequest request)
+    {
+        // First retrieve the raw access token
+        var bootstrapContext = ClaimsPrincipal.Current.Identities.First().BootstrapContext as BootstrapContext;
+        if (bootstrapContext != null)
+        {
+            // Use MSAL to invoke the on-behalf-of flow to exchange token for a Graph token
+            UserAssertion userAssertion = new UserAssertion(bootstrapContext.Token);
+            ClientCredential clientCred = new ClientCredential(ConfigurationManager.AppSettings["ida:AppPassword"]);
+            ConfidentialClientApplication cca = new ConfidentialClientApplication(
+                ConfigurationManager.AppSettings["ida:AppId"],
+                ConfigurationManager.AppSettings["ida:RedirectUri"],
+                clientCred, null, null);
+
+            string[] graphScopes = { "Files.ReadWrite", "Mail.Read" };
+
+            AuthenticationResult authResult = await cca.AcquireTokenOnBehalfOfAsync(graphScopes, userAssertion);
+
+            // Initialize a Graph client
+            GraphServiceClient graphClient = new GraphServiceClient(
+                new DelegateAuthenticationProvider(
+                    (requestMessage) => {
+                        // Add the OneDrive access token to each outgoing request
+                        requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+                        return Task.FromResult(0);
+                    }));
+
+            foreach (string attachmentId in request.attachmentIds)
+            {
+                var attachment = await graphClient.Me.Messages[request.messageId].Attachments[attachmentId].Request().GetAsync();
+
+                // Is this a file or an Outlook item?
+                if (string.Compare(attachment.ODataType, "#microsoft.graph.itemAttachment") == 0)
+                {
+                    // Re-request the attachment with the item expanded
+                    var itemAttachment = await graphClient.Me.Messages[request.messageId].Attachments[attachmentId].Request()
+                        .Expand("microsoft.graph.itemAttachment/item").GetAsync() as ItemAttachment;
+
+                    // Serialize the item to JSON and save to OneDrive
+                    string jsonItem = JsonConvert.SerializeObject(itemAttachment.Item);
+                    MemoryStream fileStream = new MemoryStream();
+                    StreamWriter sw = new StreamWriter(fileStream);
+                    sw.Write(jsonItem);
+                    sw.Flush();
+                    fileStream.Position = 0;
+                    bool success = await SaveFileToOneDrive(graphClient, itemAttachment.Name + ".json", fileStream);
+                    if (!success)
+                    {
+                        return BadRequest(string.Format("Could not save {0} to OneDrive", itemAttachment.Name));
+                    }
+                }
+                else
+                {
+                    var fileAttachment = attachment as FileAttachment;
+
+                    // For files, we can build a stream directly from ContentBytes
+                    if (fileAttachment.Size < (4 * 1024 * 1024))
+                    {
+                        MemoryStream fileStream = new MemoryStream(fileAttachment.ContentBytes);
+                        bool success = await SaveFileToOneDrive(graphClient, fileAttachment.Name, fileStream);
+                        if (!success)
+                        {
+                            return BadRequest(string.Format("Could not save {0} to OneDrive", fileAttachment.Name));
+                        }
+                    }
+                    else
+                    {
+                        // TODO: Add code here to handle larger files. See:
+                        // https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/api/item_createuploadsession
+                        // and
+                        // https://github.com/microsoftgraph/aspnet-snippets-sample/blob/master/Graph-ASPNET-46-Snippets/Microsoft%20Graph%20ASPNET%20Snippets/Models/FilesService.cs
+                        return BadRequest("File is too large for simple upload.");
+                    }
+                }
+            }
+
+            return Ok();
+        }
+        else
+        {
+            return BadRequest("Could not retrieve access token from request.");
+        }
+    }
+    ```
+
+### Update the add-in JavaScript to use SSO
+
+The only remaining task is to update the add-in JavaScript to get the SSO token and use it to call the Web API.
+
+#### Update the taskpane code
+
+1. Open the `.\AttachmentDemoWeb\MessageRead.js` file. Rename the existing `saveAttachments` method to `saveAttachmentsWithPrompt`. Remove the call to `showSpinner` at the beginning of the method.
+1. Add the following code into the file:
+
+    ```js
+    function saveAttachments(attachmentIds) {
+        showSpinner();
+
+        // First attempt to get an SSO token
+        if (Office.context.auth !== undefined && Office.context.auth.getAccessTokenAsync !== undefined) {
+            Office.context.auth.getAccessTokenAsync(function (result) {
+                if (result.status === "succeeded") {
+                    // No need to prompt user, use this token to call Web API
+                    saveAttachmentsWithSSO(result.value, attachmentIds);
+                } else {
+                    // Could not get SSO token, proceed with authentication prompt
+                    saveAttachmentsWithPrompt(attachmentIds);
+                }
+            });
+        }
+    }
+
+    function saveAttachmentsWithSSO(accessToken, attachmentIds) {
+        var saveAttachmentsRequest = {
+            attachmentIds: attachmentIds,
+            messageId: getRestId(Office.context.mailbox.item.itemId)
+        };
+
+        $.ajax({
+            type: "POST",
+            url: "/api/SaveAttachments",
+            headers: {
+                "Authorization": "Bearer " + accessToken
+            },
+            data: JSON.stringify(saveAttachmentsRequest),
+            contentType: "application/json; charset=utf-8"
+        }).done(function (data) {
+            showNotification("Success", "Attachments saved");
+        }).fail(function (error) {
+            showNotification("Error saving attachments", error.status);
+        }).always(function () {
+            hideSpinner();
+        });
+    }
+    ```
+
+#### Update the UI-less code
+
+1. Open the `.\AttachmentDemoWeb\Functions\FunctionFile.js` file. Rename the existing `saveAllAttachments` method to `saveAllAttachmentsWithPrompt`.
+1. Add the following code to the file:
+
+    ```js
+    function saveAllAttachments(event) {
+        showProgress("Try to obtain SSO token");
+
+        // First attempt to get an SSO token
+        if (Office.context.auth !== undefined && Office.context.auth.getAccessTokenAsync !== undefined) {
+            Office.context.auth.getAccessTokenAsync(function (result) {
+                if (result.status === "succeeded") {
+                    // No need to prompt user, use this token to call Web API
+                    saveAllAttachmentsWithSSO(result.value, event);
+                } else {
+                    // Could not get SSO token, proceed with authentication prompt
+                    saveAllAttachmentsWithPrompt(event);
+                }
+            });
+        }
+    }
+
+    function saveAllAttachmentsWithSSO(ssoToken, event) {
+        var attachmentIds = [];
+
+        Office.context.mailbox.item.attachments.forEach(function (attachment) {
+            attachmentIds.push(getRestId(attachment.id));
+        });
+
+        var saveAttachmentsRequest = {
+            attachmentIds: attachmentIds,
+            messageId: getRestId(Office.context.mailbox.item.itemId)
+        };
+
+        $.ajax({
+            type: "POST",
+            url: "/api/SaveAttachments",
+            headers: {
+                "Authorization": "Bearer " + ssoToken
+            },
+            data: JSON.stringify(saveAttachmentsRequest),
+            contentType: "application/json; charset=utf-8"
+        }).done(function (data) {
+            showSuccess("Attachments saved");
+        }).fail(function (error) {
+            showError("Error saving attachments");
+        }).always(function () {
+            event.completed();
+        });
+    }
+    ```

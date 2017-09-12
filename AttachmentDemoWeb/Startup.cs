@@ -3,6 +3,7 @@ using Microsoft.Owin;
 using Microsoft.Owin.Security.Jwt;
 using Microsoft.Owin.Security.OAuth;
 using Owin;
+using System.Configuration;
 using System.IdentityModel.Tokens;
 
 [assembly: OwinStartup(typeof(AttachmentDemoWeb.Startup))]
@@ -17,7 +18,7 @@ namespace AttachmentDemoWeb
             var tokenValidationParms = new TokenValidationParameters
             {
                 // Audience MUST be the application ID of the app
-                ValidAudience = "05adb30e-50fa-4ae2-9cec-eab2cd6095b0",
+                ValidAudience = ConfigurationManager.AppSettings["ida:AppId"],
                 // Since this is multi-tenant we will validate the issuer in the controller
                 ValidateIssuer = false,
                 SaveSigninToken = true
