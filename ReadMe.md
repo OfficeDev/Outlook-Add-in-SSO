@@ -1,4 +1,4 @@
-# AttachmentsDemo Sample Mail App
+# AttachmentsDemo Sample Outlook Add-in
 
 The sample implements an Outlook add-in that adds buttons to the Outlook ribbon. It allows the user to save all attachments to their OneDrive. The sample illustrates the following concepts:
  
