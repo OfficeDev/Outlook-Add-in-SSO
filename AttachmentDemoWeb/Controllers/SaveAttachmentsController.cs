@@ -1,11 +1,16 @@
 ﻿// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE.txt in the project root for license information.
 using AttachmentDemoWeb.Models;
 using Microsoft.Graph;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 using System;
+using System.Configuration;
+using System.IdentityModel.Tokens;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -15,6 +20,137 @@ namespace AttachmentDemoWeb.Controllers
     {
         // POST api/<controller>
         public async Task<IHttpActionResult> Post([FromBody]SaveAttachmentRequest request)
+        {
+            if (Request.Headers.Contains("Authorization"))
+            {
+                // Request contains bearer token, validate it
+                var scopeClaim = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/scope");
+                if (scopeClaim != null)
+                {
+                    // Check the allowed scopes
+                    string[] addinScopes = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/scope").Value.Split(' ');
+                    if (!addinScopes.Contains("access_as_user"))
+                    {
+                        return BadRequest("The bearer token is missing the required scope.");
+                    }
+                }
+                else
+                {
+                    return BadRequest("The bearer token is invalid.");
+                }
+
+                var issuerClaim = ClaimsPrincipal.Current.FindFirst("iss");
+                var tenantIdClaim = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid");
+                if (issuerClaim != null && tenantIdClaim != null)
+                {
+                    // validate the issuer
+                    string expectedIssuer = string.Format("https://login.microsoftonline.com/{0}/v2.0", tenantIdClaim.Value);
+                    if (string.Compare(issuerClaim.Value, expectedIssuer, StringComparison.OrdinalIgnoreCase) != 0)
+                    {
+                        return BadRequest("The token issuer is invalid.");
+                    }
+                }
+                else
+                {
+                    return BadRequest("The bearer token is invalid.");
+                }
+
+                // Passed validation, process the request
+                return await SaveAttachmentsWithSsoToken(request);
+            }
+            else
+            {
+                // No bearer token, so this is a request without SSO
+                // Access tokens are included in the request
+                return await SaveAttachmentsWithDistinctTokens(request);
+            }
+        }
+
+        private async Task<IHttpActionResult> SaveAttachmentsWithSsoToken(SaveAttachmentRequest request)
+        {
+            // First retrieve the raw access token
+            var bootstrapContext = ClaimsPrincipal.Current.Identities.First().BootstrapContext as BootstrapContext;
+            if (bootstrapContext != null)
+            {
+                // Use MSAL to invoke the on-behalf-of flow to exchange token for a Graph token
+                UserAssertion userAssertion = new UserAssertion(bootstrapContext.Token);
+                ClientCredential clientCred = new ClientCredential(ConfigurationManager.AppSettings["ida:AppPassword"]);
+                ConfidentialClientApplication cca = new ConfidentialClientApplication(
+                    ConfigurationManager.AppSettings["ida:AppId"],
+                    ConfigurationManager.AppSettings["ida:RedirectUri"],
+                    clientCred, null, null);
+
+                string[] graphScopes = { "Files.ReadWrite", "Mail.Read" };
+
+                AuthenticationResult authResult = await cca.AcquireTokenOnBehalfOfAsync(graphScopes, userAssertion);
+
+                // Initialize a Graph client
+                GraphServiceClient graphClient = new GraphServiceClient(
+                    new DelegateAuthenticationProvider(
+                        (requestMessage) => {
+                            // Add the OneDrive access token to each outgoing request
+                            requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
+                            return Task.FromResult(0);
+                        }));
+
+                foreach (string attachmentId in request.attachmentIds)
+                {
+                    var attachment = await graphClient.Me.Messages[request.messageId].Attachments[attachmentId].Request().GetAsync();
+
+                    // Is this a file or an Outlook item?
+                    if (string.Compare(attachment.ODataType, "#microsoft.graph.itemAttachment") == 0)
+                    {
+                        // Re-request the attachment with the item expanded
+                        var itemAttachment = await graphClient.Me.Messages[request.messageId].Attachments[attachmentId].Request()
+                            .Expand("microsoft.graph.itemAttachment/item").GetAsync() as ItemAttachment;
+
+                        // Serialize the item to JSON and save to OneDrive
+                        string jsonItem = JsonConvert.SerializeObject(itemAttachment.Item);
+                        MemoryStream fileStream = new MemoryStream();
+                        StreamWriter sw = new StreamWriter(fileStream);
+                        sw.Write(jsonItem);
+                        sw.Flush();
+                        fileStream.Position = 0;
+                        bool success = await SaveFileToOneDrive(graphClient, itemAttachment.Name + ".json", fileStream);
+                        if (!success)
+                        {
+                            return BadRequest(string.Format("Could not save {0} to OneDrive", itemAttachment.Name));
+                        }
+                    }
+                    else
+                    {
+                        var fileAttachment = attachment as FileAttachment;
+
+                        // For files, we can build a stream directly from ContentBytes
+                        if (fileAttachment.Size < (4 * 1024 * 1024))
+                        {
+                            MemoryStream fileStream = new MemoryStream(fileAttachment.ContentBytes);
+                            bool success = await SaveFileToOneDrive(graphClient, fileAttachment.Name, fileStream);
+                            if (!success)
+                            {
+                                return BadRequest(string.Format("Could not save {0} to OneDrive", fileAttachment.Name));
+                            }
+                        }
+                        else
+                        {
+                            // TODO: Add code here to handle larger files. See:
+                            // https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/api/item_createuploadsession
+                            // and
+                            // https://github.com/microsoftgraph/aspnet-snippets-sample/blob/master/Graph-ASPNET-46-Snippets/Microsoft%20Graph%20ASPNET%20Snippets/Models/FilesService.cs
+                            return BadRequest("File is too large for simple upload.");
+                        }
+                    }
+                }
+
+                return Ok();
+            }
+            else
+            {
+                return BadRequest("Could not retrieve access token from request.");
+            }
+        }
+
+        private async Task<IHttpActionResult> SaveAttachmentsWithDistinctTokens(SaveAttachmentRequest request)
         {
             // Validate request
             if (request == null || !request.IsValid())
@@ -63,7 +199,7 @@ namespace AttachmentDemoWeb.Controllers
                         // Currently REST API doesn't support access to the MIME stream
                         // So for now, just get the JSON representation of the attached item and save it
                         // as a JSON file
-                        var getAttachedItemJsonReq = new HttpRequestMessage(HttpMethod.Get, baseAttachmentsUri + 
+                        var getAttachedItemJsonReq = new HttpRequestMessage(HttpMethod.Get, baseAttachmentsUri +
                             attachmentId + "?$expand=Microsoft.OutlookServices.ItemAttachment/Item");
 
                         getAttachedItemJsonReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.outlookToken);

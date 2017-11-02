@@ -159,8 +159,46 @@
     function saveAttachments(attachmentIds) {
         showSpinner();
 
+        // First attempt to get an SSO token
+        if (Office.context.auth !== undefined && Office.context.auth.getAccessTokenAsync !== undefined) {
+            Office.context.auth.getAccessTokenAsync(function (result) {
+                if (result.status === "succeeded") {
+                    // No need to prompt user, use this token to call Web API
+                    saveAttachmentsWithSSO(result.value, attachmentIds);
+                } else {
+                    // Could not get SSO token, proceed with authentication prompt
+                    saveAttachmentsWithPrompt(attachmentIds);
+                }
+            });
+        }
+    }
+
+    function saveAttachmentsWithSSO(accessToken, attachmentIds) {
+        var saveAttachmentsRequest = {
+            attachmentIds: attachmentIds,
+            messageId: getRestId(Office.context.mailbox.item.itemId)
+        };
+
+        $.ajax({
+            type: "POST",
+            url: "/api/SaveAttachments",
+            headers: {
+                "Authorization": "Bearer " + accessToken
+            },
+            data: JSON.stringify(saveAttachmentsRequest),
+            contentType: "application/json; charset=utf-8"
+        }).done(function (data) {
+            showNotification("Success", "Attachments saved");
+        }).fail(function (error) {
+            showNotification("Error saving attachments", error.status);
+        }).always(function () {
+            hideSpinner();
+        });
+    }
+
+    function saveAttachmentsWithPrompt(attachmentIds) {
         authenticator
-            .authenticate("Microsoft")
+            .authenticate(OfficeHelpers.DefaultEndpoints.Microsoft)
             .then(function (token) {
                 // Get callback token, which grants read access to the current message
                 // via the Outlook API
