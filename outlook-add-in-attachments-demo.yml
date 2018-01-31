@@ -1,0 +1,20 @@
+### YamlMime:Sample
+sample:
+- name: AttachmentsDemo Sample Outlook Add-in
+  path: ''
+  description: The sample implements an Outlook add-in that adds buttons to the Outlook ribbon. It allows the user to save all attachments to their OneDrive.
+  readme: ''
+  generateZip: FALSE
+  isLive: TRUE
+  technologies:
+  - Office Add-in
+  azureDeploy: ''
+  author: jamescro
+  platforms: []
+  languages:
+  - JavaScript
+  extensions:
+    products:
+    - Outlook
+    - OneDrive
+    scenarios: []
