@@ -34,11 +34,24 @@ function saveAllAttachments(event) {
             if (result.status === "succeeded") {
                 // No need to prompt user, use this token to call Web API
                 saveAllAttachmentsWithSSO(result.value, event);
+            } else if (result.error.code == 13007 || result.error.code == 13005) {
+                // These error codes indicate that we need to prompt for consent
+                Office.context.auth.getAccessTokenAsync({ forceConsent: true }, function (result) {
+                    if (result.status === "succeeded") {
+                        saveAllAttachmentsWithSSO(result.value, event);
+                    } else {
+                        // Could not get SSO token, proceed with authentication prompt
+                        saveAllAttachmentsWithPrompt(event);
+                    }
+                });
             } else {
                 // Could not get SSO token, proceed with authentication prompt
                 saveAllAttachmentsWithPrompt(event);
             }
         });
+    } else {
+        // SSO not supported
+        saveAllAttachmentsWithPrompt(event);
     }
 }
 
@@ -81,7 +94,7 @@ function saveAllAttachmentsWithPrompt(event) {
     });
 
     authenticator
-        .authenticate("Microsoft")
+        .authenticate(OfficeHelpers.DefaultEndpoints.Microsoft, true)
         .then(function (token) {
             showProgress("Retrieving Outlook callback token");
 
