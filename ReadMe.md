@@ -50,8 +50,7 @@ You have two choices for providing consent. You can use an administrator account
 If you have access to a tenant administrator account, this method will allow you to provide consent for all users in your organization, which can be convenient if you have multiple developers that need to develop and test your add-in.
 
 1. Browse to `https://login.microsoftonline.com/common/adminconsent?client_id={application_ID}&state=12345`, where `{application_ID}` is the application ID shown in your app registration.
-1. Sign in with your administrator account.
-1. Review the permissions and click **Accept**.
+1. Sign in with your administrator account.1. Review the permissions and click **Accept**.
 
 The browser will attempt to redirect back to your app, which may not be running. You might see a "this site cannot be reached" error after clicking **Accept**. This is OK, the consent was still recorded.
 
@@ -83,7 +82,7 @@ Press **F5** to build and debug the project. You should be prompted for a user a
 
 ![The add-in buttons on the ribbon in Outlook on the desktop](readme-images/buttons-outlook.PNG)
 
-** Add-in in Outlook on the web**
+**Add-in in Outlook on the web**
 
 ![The add-in buttons in Outlook on the web](readme-images/buttons-owa.PNG)
 
