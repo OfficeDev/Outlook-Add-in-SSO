@@ -21,7 +21,8 @@ Before you run the sample, you'll need to do a few things to make it work proper
         
     1. Click **Add Platform**. Choose **Web API**. Configure this section as follows:
         - Under **Application ID URI**, change the default value by inserting your host and port number before the GUID listed there. For example, if the default value is `api://05adb30e-50fa-4ae2-9cec-eab2cd6095b0`, and your app is running on `localhost:44349`, the value is `api://localhost:44349/05adb30e-50fa-4ae2-9cec-eab2cd6095b0`.
-        - Under **Pre-authorized applications**, enter `d3590ed6-52b3-4102-aeff-aad2292ab01c` for the **Application ID**. Click the **Scope** dropdown and select the only entry there. This preauthorizes Office to access the app.
+        - Under **Pre-authorized applications**, enter `d3590ed6-52b3-4102-aeff-aad2292ab01c` for the **Application ID**. Click the **Scope** dropdown and select the only entry there. This pre-authorizes Desktop Office (on Windows) to access the app.
+        - Under **Pre-authorized applications**, enter `bc59ab01-8403-45c6-8796-ac3ef710b3e3` for the **Application ID**. Click the **Scope** dropdown and select the only entry there. This pre-authorizes Outlook on the web to access the app.
     1. Locate the **Microsoft Graph Permissions** section in the app registration. Next to **Delegated Permissions**, click **Add**. Select **Files.ReadWrite**, **Mail.Read**, **offline_access**, **openid**, and **profile**. Click **OK**.
 
 Click **Save** to complete the registration. Copy the **Application Id** and save it in the same place with the app password you saved earlier. We'll need those values soon.
@@ -41,7 +42,7 @@ Edit [Web.config](AttachmentDemoWeb/Web.config) and replace the `YOUR APP ID HER
 
 ## Provide user consent to the app
 
-In this step we will provide user consent to the permissions we just configured on the app. This step is **only** necessary because we will be sideloading the add-in for development and testing. Normally a production add-in will be listed in the Office Store, and users will be prompted to give consent during the installation process through the store.
+In this step we will provide user consent to the permissions we just configured on the app. This step is **only** necessary because we will be side-loading the add-in for development and testing. Normally a production add-in will be listed in the Office Store, and users will be prompted to give consent during the installation process through the store.
 
 You have two choices for providing consent. You can use an administrator account and consent once for all users in your Office 365 organization, or you can use any account to consent for just that user.
 
