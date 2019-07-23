@@ -1,3 +1,18 @@
+--- 
+page_type: sample 
+products: 
+- office-outlook
+- office-onedrive
+- office-365 
+languages: 
+- javascript
+extensions: 
+  contentType: samples 
+  technologies: 
+  - Add-ins 
+  createdDate: 12/15/2014 11:02:04 AM 
+---
+
 # AttachmentsDemo Sample Outlook Add-in
 
 The sample implements an Outlook add-in that adds buttons to the Outlook ribbon. It allows the user to save all attachments to their OneDrive. The sample illustrates the following concepts:
