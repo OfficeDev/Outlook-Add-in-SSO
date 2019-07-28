@@ -1,8 +1,19 @@
+---
+languages:
+- javascript
+page_type: sample
+description: "The sample implements an Outlook add-in that adds buttons to the Outlook ribbon."
+products:
+- office
+- office-outlook
+urlFragment: outlook-ribbon-addin
+---
+
 # AttachmentsDemo Sample Outlook Add-in
 
 The sample implements an Outlook add-in that adds buttons to the Outlook ribbon. It allows the user to save all attachments to their OneDrive. The sample illustrates the following concepts:
  
-- Adding [add-in command buttons](https://dev.office.com/docs/add-ins/outlook/manifests/define-add-in-commands) to the Outlook ribbon when reading mail, including a UI-less button and a button that opens a task pane
+- Adding [add-in command buttons](https://docs.microsoft.com/outlook/add-ins/add-in-commands-for-outlook) to the Outlook ribbon when reading mail, including a UI-less button and a button that opens a task pane
 - Implementing a WebAPI to [retrieve attachments via a callback token and the Outlook REST API](https://dev.office.com/docs/add-ins/outlook/use-rest-api)
 - [Using the SSO access token](https://docs.microsoft.com/outlook/add-ins/authenticate-a-user-with-an-sso-token) to call the Microsoft Graph API without prompting the user
 - If the SSO token is not available, authenticating to the user's OneDrive using the OAuth2 implicit flow via the [office-js-helpers library](https://github.com/OfficeDev/office-js-helpers).
