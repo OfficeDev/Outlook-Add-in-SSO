@@ -17,7 +17,7 @@ The sample implements an Outlook add-in that uses Office's SSO feature to give t
 - If the SSO token is not available, authenticating to the user's OneDrive using the OAuth2 implicit flow via the [office-js-helpers library](https://github.com/OfficeDev/office-js-helpers).
 - Using the [Microsoft Graph API](https://developer.microsoft.com/graph/docs/api-reference/v1.0/resources/onedrive) to create files in OneDrive.
 - Adding [add-in command buttons](https://docs.microsoft.com/outlook/add-ins/add-in-commands-for-outlook) to the Outlook ribbon when reading mail, including a UI-less button and a button that opens a task pane
-- Implementing a WebAPI to [retrieve attachments via a callback token and the Outlook REST API](https://dev.office.com/docs/add-ins/outlook/use-rest-api)
+- Implementing a WebAPI to [retrieve attachments via a callback token and the Outlook REST API](https://docs.microsoft.com/office/dev/add-ins/outlook/get-attachments-of-an-outlook-item)
 
 ## Configuring the Sample
 
