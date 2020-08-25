@@ -167,7 +167,7 @@
                     saveAttachmentsWithSSO(result.value, attachmentIds);
                 } else if (result.error.code == 13007 || result.error.code == 13005) {
                     // These error codes indicate that we need to prompt for consent
-                    Office.context.auth.getAccessTokenAsync({ forceConsent: true }, function (result) {
+                    Office.context.auth.getAccessTokenAsync({ allowConsentPrompt: true }, function (result) {
                         if (result.status === "succeeded") {
                             saveAttachmentsWithSSO(result.value, attachmentIds);
                         } else {
