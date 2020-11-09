@@ -42,12 +42,15 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="AttachmentDemoManifest\SharePointProjectItem.spdata">
       <SharePointProjectItemId>{c656cc7b-84b4-4138-a4cd-5856f6a5c68b}</SharePointProjectItemId>
     </None>
     <Content Include="AttachmentDemoManifest\AttachmentDemo.xml">
       <OpcRelationship>manifest-oemanifest</OpcRelationship>
+      <SubType>Designer</SubType>
     </Content>
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,6 @@ using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 using System;
 using System.Configuration;
-using System.IdentityModel.Tokens;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -39,22 +38,6 @@ namespace AttachmentDemoWeb.Controllers
                     return BadRequest("The bearer token is invalid.");
                 }
 
-                var issuerClaim = ClaimsPrincipal.Current.FindFirst("iss");
-                var tenantIdClaim = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid");
-                if (issuerClaim != null && tenantIdClaim != null)
-                {
-                    // validate the issuer
-                    string expectedIssuer = string.Format("https://login.microsoftonline.com/{0}/v2.0", tenantIdClaim.Value);
-                    if (string.Compare(issuerClaim.Value, expectedIssuer, StringComparison.OrdinalIgnoreCase) != 0)
-                    {
-                        return BadRequest("The token issuer is invalid.");
-                    }
-                }
-                else
-                {
-                    return BadRequest("The bearer token is invalid.");
-                }
-
                 // Passed validation, process the request
                 return await SaveAttachmentsWithSsoToken(request);
             }
@@ -69,20 +52,19 @@ namespace AttachmentDemoWeb.Controllers
         private async Task<IHttpActionResult> SaveAttachmentsWithSsoToken(SaveAttachmentRequest request)
         {
             // First retrieve the raw access token
-            var bootstrapContext = ClaimsPrincipal.Current.Identities.First().BootstrapContext as BootstrapContext;
+            var bootstrapContext = ClaimsPrincipal.Current.Identities.First().BootstrapContext.ToString();
             if (bootstrapContext != null)
             {
                 // Use MSAL to invoke the on-behalf-of flow to exchange token for a Graph token
-                UserAssertion userAssertion = new UserAssertion(bootstrapContext.Token);
-                ClientCredential clientCred = new ClientCredential(ConfigurationManager.AppSettings["ida:AppPassword"]);
-                ConfidentialClientApplication cca = new ConfidentialClientApplication(
-                    ConfigurationManager.AppSettings["ida:AppId"],
-                    ConfigurationManager.AppSettings["ida:RedirectUri"],
-                    clientCred, null, null);
-
+                UserAssertion userAssertion = new UserAssertion(bootstrapContext);
                 string[] graphScopes = { "Files.ReadWrite", "Mail.Read" };
+                var client = ConfidentialClientApplicationBuilder.Create(ConfigurationManager.AppSettings["ida:AppId"])
+                    .WithAuthority(ConfigurationManager.AppSettings["ida:Authority"])
+                    .WithClientSecret(ConfigurationManager.AppSettings["ida:AppPassword"])
+                    .WithRedirectUri(ConfigurationManager.AppSettings["ida:RedirectUri"])
+                    .Build();
 
-                AuthenticationResult authResult = await cca.AcquireTokenOnBehalfOfAsync(graphScopes, userAssertion);
+                AuthenticationResult authResult = await client.AcquireTokenOnBehalfOf(graphScopes, userAssertion).ExecuteAsync();
 
                 // Initialize a Graph client
                 GraphServiceClient graphClient = new GraphServiceClient(
@@ -244,7 +226,7 @@ namespace AttachmentDemoWeb.Controllers
         private async Task<bool> SaveFileToOneDrive(GraphServiceClient client, string fileName, Stream fileContent)
         {
             string relativeFilePath = "Outlook Attachments/" + MakeFileNameValid(fileName);
-        
+
             try
             {
                 // This method only supports files 4MB or less
