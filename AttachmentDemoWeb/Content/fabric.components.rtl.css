@@ -1,7 +1,7 @@
 /* Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information. */
 
 /**
- * Office UI Fabric JS 1.4.0
+ * Office UI Fabric JS 1.5.0
  * The JavaScript front-end framework for building experiences for Office 365.
  **/
 
@@ -12,14 +12,16 @@
 }
 
 .ms-Breadcrumb.is-overflow .ms-Breadcrumb-overflow {
-  display: inline;
+  display: inline-block;
+  margin-left: -4px;
 }
 
 .ms-Breadcrumb-chevron {
   font-size: 12px;
   color: #666666;
   vertical-align: top;
-  margin: 11px 7px;
+  margin: 13px 4px;
+  line-height: 1;
 }
 
 .ms-Breadcrumb-list {
@@ -58,7 +60,6 @@
 .ms-Breadcrumb-overflowMenu {
   display: none;
   position: absolute;
-  margin-left: -2px;
 }
 
 .ms-Breadcrumb-overflowMenu.is-open {
@@ -142,12 +143,12 @@
 
   .ms-Breadcrumb-chevron {
     font-size: 10px;
-    margin: 8px 5px;
+    margin: 9px 3px;
   }
 
   .ms-Breadcrumb-overflow .ms-Breadcrumb-overflowButton {
     font-size: 16px;
-    padding: 5px 4px;
+    padding: 2px 0;
   }
 }
 

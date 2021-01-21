@@ -1,16 +1,18 @@
 ﻿using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin.Security.Jwt;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AttachmentDemoWeb.App_Start
 {
-    public class OpenIdConnectCachingSecurityTokenProvider : IIssuerSecurityTokenProvider
+    public class OpenIdConnectCachingSecurityTokenProvider : IIssuerSecurityKeyProvider
     {
         public ConfigurationManager<OpenIdConnectConfiguration> _configManager;
         private string _issuer;
-        private IEnumerable<SecurityToken> _tokens;
+        private IEnumerable<SecurityKey> _keys;
         private readonly string _metadataEndpoint;
 
         private readonly ReaderWriterLockSlim _synclock = new ReaderWriterLockSlim();
@@ -18,7 +20,7 @@ namespace AttachmentDemoWeb.App_Start
         public OpenIdConnectCachingSecurityTokenProvider(string metadataEndpoint)
         {
             _metadataEndpoint = metadataEndpoint;
-            _configManager = new ConfigurationManager<OpenIdConnectConfiguration>(metadataEndpoint);
+            _configManager = new ConfigurationManager<OpenIdConnectConfiguration>(metadataEndpoint, new OpenIdConnectConfigurationRetriever());
 
             RetrieveMetadata();
         }
@@ -52,7 +54,7 @@ namespace AttachmentDemoWeb.App_Start
         /// <value>
         /// All known security tokens.
         /// </value>
-        public IEnumerable<SecurityToken> SecurityTokens
+        public IEnumerable<SecurityKey> SecurityKeys
         {
             get
             {
@@ -60,7 +62,7 @@ namespace AttachmentDemoWeb.App_Start
                 _synclock.EnterReadLock();
                 try
                 {
-                    return _tokens;
+                    return _keys;
                 }
                 finally
                 {
@@ -74,9 +76,9 @@ namespace AttachmentDemoWeb.App_Start
             _synclock.EnterWriteLock();
             try
             {
-                OpenIdConnectConfiguration config = _configManager.GetConfigurationAsync().Result;
+                OpenIdConnectConfiguration config = Task.Run(_configManager.GetConfigurationAsync).Result;
                 _issuer = config.Issuer;
-                _tokens = config.SigningTokens;
+                _keys = config.SigningKeys;
             }
             finally
             {

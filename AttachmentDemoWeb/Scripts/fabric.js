@@ -1,5 +1,5 @@
 /**
- * Office UI Fabric JS 1.4.0
+ * Office UI Fabric JS 1.5.0
  * The JavaScript front-end framework for building experiences for Office 365.
  **/
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
@@ -337,37 +337,6 @@ var fabric;
 
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 /**
- * Button
- *
- * Mostly just a click handler
- *
- */
-var fabric;
-(function (fabric) {
-    "use strict";
-    var Button = (function () {
-        function Button(container, clickHandler) {
-            this._container = container;
-            if (clickHandler) {
-                this._clickHandler = clickHandler;
-                this._setClick();
-            }
-        }
-        Button.prototype.disposeEvents = function () {
-            this._container.removeEventListener("click", this._clickHandler, false);
-        };
-        Button.prototype._setClick = function () {
-            this._container.addEventListener("click", this._clickHandler, false);
-        };
-        return Button;
-    }());
-    fabric.Button = Button;
-})(fabric || (fabric = {}));
-
-
-
-// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
-/**
  * @namespace fabric
  */
 var fabric;
@@ -607,6 +576,37 @@ var fabric;
     }());
     fabric.Breadcrumb = Breadcrumb;
 })(fabric || (fabric = {})); // end fabric namespace
+
+// Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
+/**
+ * Button
+ *
+ * Mostly just a click handler
+ *
+ */
+var fabric;
+(function (fabric) {
+    "use strict";
+    var Button = (function () {
+        function Button(container, clickHandler) {
+            this._container = container;
+            if (clickHandler) {
+                this._clickHandler = clickHandler;
+                this._setClick();
+            }
+        }
+        Button.prototype.disposeEvents = function () {
+            this._container.removeEventListener("click", this._clickHandler, false);
+        };
+        Button.prototype._setClick = function () {
+            this._container.addEventListener("click", this._clickHandler, false);
+        };
+        return Button;
+    }());
+    fabric.Button = Button;
+})(fabric || (fabric = {}));
+
+
 
 // Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license. See LICENSE in the project root for license information.
 /**
@@ -976,6 +976,7 @@ var fabric;
         }
         Callout.prototype._setOpener = function () {
             this._addTarget.addEventListener("click", this._clickHandler.bind(this), true);
+            this._addTarget.addEventListener("keyup", this._keyupHandler.bind(this), true);
         };
         Callout.prototype._openContextMenu = function () {
             var modifiers = [];
@@ -992,12 +993,25 @@ var fabric;
             return this._container.classList.contains(modifierClass);
         };
         Callout.prototype._closeHandler = function (e) {
-            this._contextualHost.disposeModal();
+            if (this._contextualHost != null) {
+                this._contextualHost.disposeModal();
+            }
             this._closeButton.removeEventListener("click", this._closeHandler.bind(this), false);
             this._addTarget.removeEventListener("click", this._clickHandler.bind(this), true);
+            this._addTarget.removeEventListener("keyup", this._keyupHandler.bind(this), true);
         };
         Callout.prototype._clickHandler = function (e) {
             this._openContextMenu();
+        };
+        Callout.prototype._keyupHandler = function (event) {
+            if (event.keyCode === 32) {
+                event.stopPropagation();
+                event.preventDefault();
+                this._openContextMenu();
+            }
+            else {
+                this._closeHandler(event);
+            }
         };
         return Callout;
     }());
@@ -1844,10 +1858,12 @@ var fabric;
             document.addEventListener("click", this._onDocumentClick.bind(this), false);
         };
         ContextualMenu.prototype._onDocumentClick = function (event) {
-            var target = event.target;
-            var classList = target.classList;
-            if (!this._hostTarget.contains(target) && !classList.contains("ms-ContextualMenu-link")) {
-                this._isOpen = false;
+            if (event.target instanceof HTMLElement) {
+                var target = event.target;
+                var classList = target.classList;
+                if (!this._hostTarget.contains(target) && !classList.contains("ms-ContextualMenu-link")) {
+                    this._isOpen = false;
+                }
             }
         };
         ContextualMenu.prototype._onContextualMenuClick = function (event) {
@@ -2429,6 +2445,9 @@ var fabric;
                 if (option.disabled) {
                     newItem.classList.add(IS_DISABLED_CLASS);
                 }
+                if (option.selected) {
+                    newItem.classList.add(IS_SELECTED_CLASS);
+                }
                 newItem.innerHTML = option.text;
                 newItem.addEventListener("click", this._onItemSelection);
                 this._newDropdown.appendChild(newItem);
@@ -2884,8 +2903,26 @@ var fabric;
         /**
          * shows banner if the banner is hidden
          */
-        MessageBanner.prototype.showBanner = function () {
+        MessageBanner.prototype.show = function () {
             this._errorBanner.className = "ms-MessageBanner";
+        };
+        /**
+       * shows banner if the banner is hidden (deprecated)
+       */
+        MessageBanner.prototype.showBanner = function () {
+            this.show();
+        };
+        /**
+         * hides banner when close button is clicked
+         */
+        MessageBanner.prototype.hide = function () {
+            if (this._errorBanner.className.indexOf("hide") === -1) {
+                this._errorBanner.className += " hide";
+                setTimeout(this._hideMessageBanner.bind(this), 500);
+            }
+        };
+        MessageBanner.prototype._hideMessageBanner = function () {
+            this._errorBanner.className = "ms-MessageBanner is-hidden";
         };
         /**
          * sets styles on resize
@@ -2964,25 +3001,13 @@ var fabric;
                 this._expand();
             }
         };
-        MessageBanner.prototype._hideMessageBanner = function () {
-            this._errorBanner.className = "ms-MessageBanner is-hidden";
-        };
-        /**
-         * hides banner when close button is clicked
-         */
-        MessageBanner.prototype._hideBanner = function () {
-            if (this._errorBanner.className.indexOf("hide") === -1) {
-                this._errorBanner.className += " hide";
-                setTimeout(this._hideMessageBanner.bind(this), 500);
-            }
-        };
         /**
          * sets handlers for resize and button click events
          */
         MessageBanner.prototype._setListeners = function () {
             window.addEventListener("resize", this._onResize.bind(this), false);
             this._chevronButton.addEventListener("click", this._toggleExpansion.bind(this), false);
-            this._closeButton.addEventListener("click", this._hideBanner.bind(this), false);
+            this._closeButton.addEventListener("click", this.hide.bind(this), false);
         };
         return MessageBanner;
     }());
@@ -3480,13 +3505,15 @@ var fabric;
          */
         Table.prototype._toggleRowSelection = function (event) {
             var selectedRow = event.target.parentElement;
-            var selectedStateClass = "is-selected";
-            // Toggle the selected state class
-            if (selectedRow.className === selectedStateClass) {
-                selectedRow.className = "";
-            }
-            else {
-                selectedRow.className = selectedStateClass;
+            if (selectedRow.tagName === "TR") {
+                var selectedStateClass = "is-selected";
+                // Toggle the selected state class
+                if (selectedRow.className === selectedStateClass) {
+                    selectedRow.className = "";
+                }
+                else {
+                    selectedRow.className = selectedStateClass;
+                }
             }
         };
         return Table;

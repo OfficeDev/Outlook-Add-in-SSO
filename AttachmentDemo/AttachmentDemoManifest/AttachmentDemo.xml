@@ -236,7 +236,6 @@
         <Id>YOUR APP ID HERE</Id>
         <Resource>api://localhost:44349/YOUR APP ID HERE</Resource>
         <Scopes>
-          <Scope>user.read</Scope>
           <Scope>files.readwrite</Scope>
           <Scope>mail.read</Scope>
         </Scopes>

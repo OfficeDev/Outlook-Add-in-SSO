@@ -1,10 +1,10 @@
 ﻿using AttachmentDemoWeb.App_Start;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin;
 using Microsoft.Owin.Security.Jwt;
 using Microsoft.Owin.Security.OAuth;
 using Owin;
 using System.Configuration;
-using System.IdentityModel.Tokens;
 
 [assembly: OwinStartup(typeof(AttachmentDemoWeb.Startup))]
 
@@ -17,17 +17,20 @@ namespace AttachmentDemoWeb
             // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=316888
             var tokenValidationParms = new TokenValidationParameters
             {
-                // Audience MUST be the application ID of the app
-                ValidAudience = ConfigurationManager.AppSettings["ida:AppId"],
-                // Since this is multi-tenant we will validate the issuer in the controller
+                ValidAudience = ConfigurationManager.AppSettings["ida:Audience"],
+                // Microsoft Accounts have an issuer GUID that is different from any organizational tenant GUID,
+                // so to support both kinds of accounts, we do not validate the issuer.
                 ValidateIssuer = false,
                 SaveSigninToken = true
             };
 
+            string[] endAuthoritySegments = { "oauth2/v2.0" };
+            string[] parsedAuthority = ConfigurationManager.AppSettings["ida:Authority"].Split(endAuthoritySegments, System.StringSplitOptions.None);
+            string wellKnownURL = parsedAuthority[0] + "v2.0/.well-known/openid-configuration";
+
             app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions
             {
-                AccessTokenFormat = new JwtFormat(tokenValidationParms,
-                    new OpenIdConnectCachingSecurityTokenProvider("https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration"))
+                AccessTokenFormat = new JwtFormat(tokenValidationParms, new OpenIdConnectCachingSecurityTokenProvider(wellKnownURL))
             });
         }
     }
